@@ -1,6 +1,6 @@
 {
   "name": "homebridge-snowswitch",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A simple snow checker, using Weather Underground for forecast and current conditions",
   "license": "MIT",
   "keywords": [
