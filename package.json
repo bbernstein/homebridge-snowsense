@@ -15,15 +15,17 @@
     "node": ">=0.12.0",
     "homebridge": ">=0.2.0"
   },
-  "author": {
-    "name": "Bernie Bernstein"
-  },
+  "author": "Bernie Bernstein",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bbernstein/homebridge-snowswitch.git"
+    "url": "git+https://github.com/bbernstein/homebridge-snowswitch.git"
   },
   "dependencies": {
     "wundergroundnode": ">=0.9",
     "debug": "^2.2.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/bbernstein/homebridge-snowswitch/issues"
+  },
+  "homepage": "https://github.com/bbernstein/homebridge-snowswitch#readme"
 }
