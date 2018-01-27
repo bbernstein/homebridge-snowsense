@@ -8,7 +8,7 @@ This was inspired by and code borrowed from [homebridge-weather-station-extended
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g homebridge-snowswitch` [NOT YET]
+2. Install this plugin using: `npm install -g homebridge-snowswitch`
 3. Gather a free developer key for Weather Underground [here](http://www.wunderground.com/weather/api/).
 4. Update your configuration file. See the samples below.
 
