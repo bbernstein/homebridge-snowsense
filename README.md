@@ -23,16 +23,15 @@ The **snowhours** field is how early we want the switch to turn on before it sno
 
 ```json
 "platforms": [
-	{
-		"platform": "SnowSwitch",
-		"name": "Snow Switch",
-		"key": "XXXXXXXXXXXXXXX",
-		"location": "02134",
-    "snowhours": 3
-	}
+   {
+      "platform": "SnowSwitch",
+      "name": "Snow Switch",
+      "key": "XXXXXXXXXXXXXXX",
+      "location": "02134",
+      "snowhours": 3
+   }
 ]
 ```
-
 
 
 ## Contributors
