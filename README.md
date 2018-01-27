@@ -18,7 +18,7 @@ Add the following information to your config file. Make sure to add your API key
 
 The **location** field is the location identifier from Weather Underground. You can find your local weather station on [Weather Underground](http://www.wunderground.com) and setting this field to **pws:\<your-nearest-weather-station\>** or simply enter your zip code.
 
-The **snowhours** field is how early we want the switch to turn on before it snows and how long after to turn it off. In other words. I setting it to **3** will turn on the switch 3 hours before it snows and turn it off 3 hours after it stop.
+The **snowhours** field is how early we want the switch to turn on before it snows and how long after to turn it off. In other words. In other words, setting it to **3** will turn on the switch 3 hours before it snows and turn it off 3 hours after it stops.
 ### Simple
 
 ```json
