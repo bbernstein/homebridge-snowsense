@@ -1,0 +1,29 @@
+{
+  "name": "homebridge-snowswitch",
+  "version": "1.0.0",
+  "description": "A simple snow checker, using Weather Underground for forecast and current conditions",
+  "license": "MIT",
+  "keywords": [
+    "homebridge-plugin",
+    "weather",
+    "weather forecast",
+    "weather condition",
+    "snow",
+    "switch accessory"
+  ],
+  "engines": {
+    "node": ">=0.12.0",
+    "homebridge": ">=0.2.0"
+  },
+  "author": {
+    "name": "Bernie Bernstein"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bbernstein/homebridge-snowswitch.git"
+  },
+  "dependencies": {
+    "wundergroundnode": ">=0.9",
+    "debug": "^2.2.0"
+  }
+}
