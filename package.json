@@ -1,6 +1,6 @@
 {
   "name": "homebridge-snowswitch",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "A simple snow checker, using Weather Underground for forecast and current conditions",
   "license": "MIT",
   "keywords": [
@@ -21,11 +21,17 @@
     "url": "git+https://github.com/bbernstein/homebridge-snowswitch.git"
   },
   "dependencies": {
-    "wundergroundnode": ">=0.9",
-    "debug": "^2.2.0"
+    "dark-sky": "^1.1.4",
+    "debug": "^2.6.9"
   },
   "bugs": {
     "url": "https://github.com/bbernstein/homebridge-snowswitch/issues"
   },
-  "homepage": "https://github.com/bbernstein/homebridge-snowswitch#readme"
+  "homepage": "https://github.com/bbernstein/homebridge-snowswitch#readme",
+  "devDependencies": {
+    "jest": "^23.6.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
 }

@@ -3,35 +3,41 @@ A switch that turns on when it's showing out using local weather forecast
 
 This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple switch that automatically switches ON when it's going to snow soon and OFF a while after it stops snowing.
 
-This was inspired by and code borrowed from [homebridge-weather-station-extended](https://github.com/naofireblade/homebridge-weather-station-extended).
-
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-snowswitch`
-3. Gather a free developer key for Weather Underground [here](http://www.wunderground.com/weather/api/)
+3. Gather a free *Secret Key* for  [Dark Sky API](https://darksky.net/dev)
 4. Update your configuration file. Read below.
 
 ## Configuration
 
 Add the following information to your config file.
 
-The **location** field is the location identifier from Weather Underground. You can find your local weather station on [Weather Underground](http://www.wunderground.com) and set this field to **pws:\<your-nearest-weather-station\>** or simply enter your zip code or city name. Test the location setting at the wunderground API site after getting your key to make sure the format is correct.
+**key** is the *Secret Key* as assigned from [DarkSky](https://darksky.net/dev)
 
-The **snowhours** field is how early before it snows should it go **on** and how long after to turn it **off**. In other words, setting it to **3** will turn **on** the switch 3 hours before it snows and turn it **off** 3 hours after it stops.
+**latitude** and **longitude** fields identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
 
-The **interval** field is how frequently (in minutes) to download the weather from wunderground. Don't do it too frequently or you will use up your API limit for the day. I set mine to **30**.
+**forecastFrequency** field is how frequently (in minutes) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day. I set mine to **30**.
+
+**beforeSnowStarts** field is number of hours before snow starts that the switch should go **on**.
+
+**afterSnowStops**  field is number of hours after snow stops that the switch should go **off**.
+
+
 
 ```json
 "platforms": [
-   {
-      "platform": "SnowSwitch",
-      "name": "Snow Switch",
-      "key": "XXXXXXXXXXXXXXX",
-      "location": "02134",
-      "interval": "30",
-      "snowhours": 3
-   }
+	{
+		"platform": "SnowSwitch",
+		"name": "Snow Switch",
+		"key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
+		"latitude": "42.326",
+		"longitude": "-71.220",
+		"interval": 15,
+		"beforeSnowStarts": 3,
+		"afterSnowStops": 3
+	}
 ]
 ```
 
@@ -50,6 +56,8 @@ To make them work with [HomeKit](https://www.apple.com/ios/home/), I needed to g
 This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [Weather Underground API](http://www.wunderground.com/weather/api/) key, then the HomeKit App end of this is pretty trivial. 
 
 I had originally made additions to [homebridge-weather-station-extended](https://github.com/naofireblade/homebridge-weather-station-extended), a more sophisticated weather forecasting add-on where I had added fields indicating that it had snowed recently or was expected to snow soon, but that required more complex setup from the iPhone App. I wanted to make something simpler at the front-end and have this single-purpose.
+
+Thanks to @mbriney on github for pointing out that the wunderground api is going away and suggesting DarkSky for the replacement api.
 
 ## How to set up the automation
 
