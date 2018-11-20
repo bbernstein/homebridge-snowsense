@@ -1,7 +1,7 @@
 'use strict';
 
 var inherits = require('util').inherits,
-debug = require('debug')('SnowWatch'),
+debug = require('debug')('snowwatch'),
 DarkSky = require('dark-sky');
 
 
