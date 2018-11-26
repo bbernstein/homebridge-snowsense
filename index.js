@@ -45,7 +45,7 @@ SnowSwitchPlatform.prototype = {
 	updateWeather: function() {
 		let that = this;
 
-		debug("BB2 Update weather online");
+		debug("updateWeather");
 		that.station.snowingSoon(that.beforeSnowStarts)
 			.then(isSnowingSoon => {
 				debug("snowingSoon="+isSnowingSoon);
@@ -54,7 +54,7 @@ SnowSwitchPlatform.prototype = {
 				for (var i = 0; i < that.accessories.length; i++) {
 					if (that.accessories[i].isSnowyService !== undefined) {
 						let service = that.accessories[i].isSnowyService;
-						debug("Setting values for " + service.displayName+" to "+isSnowy);
+						that.log("Setting value for " + service.displayName+" to "+isSnowy);
 						service.setCharacteristic(Characteristic.On, isSnowy);
 					}
 				}
@@ -81,15 +81,7 @@ function IsSnowyAccessory(platform) {
 IsSnowyAccessory.prototype = {
 	identify: function (callback) {
 		let that = this;
-		debug("Identify!");
-		// this.platform.station.conditions().request(this.platform.location, function(err, response) {
-		// 	if (err) {
-		// 		that.log.error(err);
-		// 	}
-		// 	else {
-		// 		that.log(response);
-		// 	}
-		// });
+		that.log("Identify!");
 		callback();
 	},
 
