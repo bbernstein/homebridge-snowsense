@@ -2,39 +2,37 @@
 
 var inherits = require('util').inherits,
 debug = require('debug')('snowwatch'),
+//debug = console.log,
 DarkSky = require('dark-sky');
 
 
 function SnowWatch(apiKey, latitude, longitude) {
 	this.latestForecast = null;
 	this.latestForecastTime = null;
-	this.lastTimeSnowForecasted = -1;
 	this.apiKey = apiKey;
 	this.latitude = latitude;
 	this.longitude = longitude;
+
+	this.lastTimeSnowForecasted = -1;
+	this.currentlySnowing = false;
+	this.snowPredicted = false;
+	this.showedRecently = false;
+
+	this.client = new DarkSky(this.apiKey)
+					.longitude(this.longitude)
+					.latitude(this.latitude)
+					.units('si')
+					.language('en')
+					.exclude('daily,minutely,flags,alerts');
 }
 
 SnowWatch.prototype.getWeather = function() {
-	var client = new DarkSky(this.apiKey);
-
-	var options = {
-	  units: 'si',
-	  exclude: 'daily,minutely,flags'
-	};
-
+	let that = this;
 	var now = Date.now();
 	var cacheMillis = 1000 * 60 * 5;	// 5 minute cache, don't check more frequently than that
 	if (this.latestForecast == null || this.latestForecastTime == null || this.latestForecastTime < now - cacheMillis) {
 		debug("Reading new forecast at "+now);
-
-		this.latestForecast = 
-			client
-				.latitude(this.latitude)
-				.longitude(this.longitude)
-				.units('si')
-				.language('en')
-				.exclude('daily,minutely,flags')
-				.get()
+		this.latestForecast = this.client.get();
 		this.latestForecastTime = now;
 	}
 	return this.latestForecast;
@@ -48,16 +46,6 @@ SnowWatch.prototype.isSnowyEnough = function(forecast) {
 		&& forecast.precipProbability > 0.5;
 }
 
-SnowWatch.prototype.iconMeansSnow = function(icon) {
-	// https://darksky.net/dev/docs
-	// all icons that have snow-like conditions have "snow" or "sleet" in them
-	// an alternative implementation might be to check precipType for the same
-	return icon && (
-				icon.includes("snow") 
-				|| icon.includes("sleet")
-			);
-}
-
 SnowWatch.prototype.lastSnowPrediction = function() {
 	return this.lastTimeSnowForecasted;
 }
@@ -68,8 +56,9 @@ SnowWatch.prototype.snowedRecently = function(hoursInPast) {
 	// if snow was in the forecast after (millisInPast), then it snowed recently
 	let result = millisInPast < this.lastTimeSnowForecasted;
 	if (result) {
-		let howLongAgo = (this.lastTimeSnowForecasted - now) / (1000 * 60);
-		debug("snowedRecently? "+result+" minutesAgo: "+howLongAgo);
+		// just for debugging, not used elsewhere
+		let howManyMinutesAgo = (this.lastTimeSnowForecasted - now) / (1000 * 60);
+		debug("snowedRecently? "+result+" minutesAgo: "+howManyMinutesAgo);
 	}
 	return result;
 }
@@ -85,11 +74,13 @@ SnowWatch.prototype.snowingSoon = function(hoursInFuture) {
 		var nowDate = new Date(now);
 		var millisInFuture = now + hoursInFuture * 60 * 60 * 1000;
 
+		var currentlySnowing = false;
+		var snowPredicted = false;
+
 		// if there is snow in the current hour, we're done
 		if (that.isSnowyEnough(result.currently)) {
-			that.lastTimeSnowForecasted = now;
+			currentlySnowing = true;
 			debug("snowing CURRENTLY");
-			return true;
 		}
 
 		// check for the next (hoursInFuture) hours if an snow-like icon is spotted
@@ -97,15 +88,23 @@ SnowWatch.prototype.snowingSoon = function(hoursInFuture) {
 			let hourMillis = hourWeather.time * 1000;
 			if (hourMillis <= millisInFuture) {
 				if (that.isSnowyEnough(hourWeather)) {
-					that.lastTimeSnowForecasted = now;
+					snowPredicted = true;
 					// break when we find a snowy hour
 					debug("snowing SOON");
-					return true;
+					break;
 				}
 			}
 		}
-		// no snow was found above
-		debug("NOT snowing currently or soon");
+
+		// in case we want to do anything with past/current/future snow
+		that.currentlySnowing = currentlySnowing;
+		that.snowPredicted = snowPredicted;
+
+		if (that.currentlySnowing || that.snowPredicted) {
+			that.lastTimeSnowForecasted = now;
+			return true;
+		}
+		debug("NOT snowing now or soon");
 		return false;
 	})
 }

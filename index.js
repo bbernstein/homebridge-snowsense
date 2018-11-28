@@ -48,7 +48,6 @@ SnowSwitchPlatform.prototype = {
 		debug("updateWeather");
 		that.station.snowingSoon(that.beforeSnowStarts)
 			.then(isSnowingSoon => {
-				debug("snowingSoon="+isSnowingSoon);
 				let isSnowy = isSnowingSoon || that.station.snowedRecently(that.afterSnowStops);
 				debug("isSnowy="+isSnowy);
 				for (var i = 0; i < that.accessories.length; i++) {
