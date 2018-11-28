@@ -3,6 +3,13 @@ A switch that turns on when it's showing out using local weather forecast
 
 This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple switch that automatically switches ON when it's going to snow soon and OFF a while after it stops snowing.
 
+## Important Upgrade Info
+
+**If upgrading from 1.0 to 1.1. We have changed weather provider to [DarkSky](https://darksky.net/dev) which 
+uses latitude/longitude for location.**
+There are other changes as well, like separate config values for how long in advance and after snow is detected to turn on/off the switch.
+
+
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
