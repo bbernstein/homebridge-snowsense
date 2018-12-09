@@ -60,7 +60,7 @@ I bought a set of [Etekcity](https://www.amazon.com/gp/product/B074GVPYPY) outle
 
 To make them work with [HomeKit](https://www.apple.com/ios/home/), I needed to get [homebridge](https://www.npmjs.com/package/homebridge) working. I had an old [Raspberry Pi](https://www.raspberrypi.org/) sitting around so I [installed it there](https://github.com/nfarina/homebridge/wiki/Running-HomeBridge-on-a-Raspberry-Pi) and put the device in a closet with the rest of my network gear. 
 
-This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [Weather Underground API](http://www.wunderground.com/weather/api/) key, then the HomeKit App end of this is pretty trivial. 
+This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [DarkSky](https://darksky.net/dev) API key, then the HomeKit App end of this is pretty trivial. 
 
 I had originally made additions to [homebridge-weather-station-extended](https://github.com/naofireblade/homebridge-weather-station-extended), a more sophisticated weather forecasting add-on where I had added fields indicating that it had snowed recently or was expected to snow soon, but that required more complex setup from the iPhone App. I wanted to make something simpler at the front-end and have this single-purpose.
 
