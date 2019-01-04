@@ -24,6 +24,8 @@ Add the following information to your config file.
 
 **afterSnowStops**  field is number of hours after snow stops that the switch should go **off**.
 
+**precipProbabilityMin**  field is minimum probability of snow that you want to consider it snowy (default is 0.5). From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
+
 
 
 ```json
@@ -36,7 +38,8 @@ Add the following information to your config file.
 		"longitude": "-71.220",
 		"interval": 15,
 		"beforeSnowStarts": 3,
-		"afterSnowStops": 3
+		"afterSnowStops": 3,
+		"precipProbabilityMin": 0.25
 	}
 ]
 ```

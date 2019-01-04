@@ -13,12 +13,17 @@ module.exports = function (homebridge) {
 
 function SnowSwitchPlatform(log, config) {
 	this.log = log;
-	this.config = config;
-	this.latitude = config['latitude'];
-	this.longitude = config['longitude'];
-	this.forecastDays = ('forecast' in config ? config['forecast'] : '');
+	let key = config['key']
+	let latitude = config['latitude']
+	let longitude = config['longitude']
 
-	this.station = new snowwatch.SnowWatch(config['key'], config['latitude'], config['longitude']);
+	// minimum probability of snow to consider it "snowy". Default 50% (0.5)
+	var precipProbabilityMin = ('precipProbabilityMin' in config ? config['precipProbabilityMin'] : 0.5)
+	if (typeof precipProbabilityMin != 'number' || precipProbabilityMin < 0 || precipProbabilityMin > 1.0) {
+		precipProbabilityMin = 0.5
+	}
+
+	this.station = new snowwatch.SnowWatch(key, latitude, longitude, precipProbabilityMin);
 
 	this.interval = ('forecastFrequency' in config ? parseInt(config['forecastFrequency']) : 4);
 	this.interval = (typeof this.interval !=='number' || (this.interval%1)!==0 || this.interval < 0) ? 4 : this.interval;

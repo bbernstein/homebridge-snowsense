@@ -6,12 +6,13 @@ debug = require('debug')('snowwatch'),
 DarkSky = require('dark-sky');
 
 
-function SnowWatch(apiKey, latitude, longitude) {
+function SnowWatch(apiKey, latitude, longitude, precipProbabilityMin) {
 	this.latestForecast = null;
 	this.latestForecastTime = null;
 	this.apiKey = apiKey;
 	this.latitude = latitude;
 	this.longitude = longitude;
+	this.precipProbabilityMin = precipProbabilityMin
 
 	this.lastTimeSnowForecasted = -1;
 	this.currentlySnowing = false;
@@ -39,11 +40,14 @@ SnowWatch.prototype.getWeather = function() {
 }
 
 SnowWatch.prototype.isSnowyEnough = function(forecast) {
+	debug("snowy? precip=" + forecast.precipType 
+		+ ", prob=" + forecast.precipProbability 
+		+ ", minProb=" + this.precipProbabilityMin)
 	return (
 				forecast.precipType == 'snow' 
 			||	forecast.precipType == 'sleet'
 		)
-		&& forecast.precipProbability > 0.5;
+		&& forecast.precipProbability > this.precipProbabilityMin;
 }
 
 SnowWatch.prototype.lastSnowPrediction = function() {
