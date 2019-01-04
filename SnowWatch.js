@@ -47,7 +47,7 @@ SnowWatch.prototype.isSnowyEnough = function(forecast) {
 				forecast.precipType == 'snow' 
 			||	forecast.precipType == 'sleet'
 		)
-		&& forecast.precipProbability > this.precipProbabilityMin;
+		&& forecast.precipProbability >= this.precipProbabilityMin;
 }
 
 SnowWatch.prototype.lastSnowPrediction = function() {
