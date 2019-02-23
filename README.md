@@ -25,11 +25,11 @@ Add the following information to your config file.
 
 **latitude** and **longitude** fields identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
 
-**forecastFrequency** field is how frequently (in minutes) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day. I set mine to **30**.
+**forecastFrequency** field is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day. I set mine to **30**.
 
-**beforeSnowStarts** field is number of hours before snow starts that the switch should go **on**.
+**beforeSnowStarts** field is number of **hours** before snow starts that the switch should go **on**.
 
-**afterSnowStops**  field is number of hours after snow stops that the switch should go **off**.
+**afterSnowStops**  field is number of **hours** after snow stops that the switch should go **off**.
 
 **precipProbabilityMin**  field is minimum probability of snow that you want to consider it snowy (default is 0.5). From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
 
@@ -43,7 +43,7 @@ Add the following information to your config file.
 		"key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
 		"latitude": "42.326",
 		"longitude": "-71.220",
-		"interval": 15,
+		"forecastFrequency": 15,
 		"beforeSnowStarts": 3,
 		"afterSnowStops": 3,
 		"precipProbabilityMin": 0.25
