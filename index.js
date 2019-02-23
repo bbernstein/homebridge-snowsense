@@ -58,8 +58,17 @@ SnowSwitchPlatform.prototype = {
 				for (var i = 0; i < that.accessories.length; i++) {
 					if (that.accessories[i].isSnowyService !== undefined) {
 						let service = that.accessories[i].isSnowyService;
-						that.log("Setting value for " + service.displayName+" to "+isSnowy);
-						service.setCharacteristic(Characteristic.On, isSnowy);
+						let curCharacteristic = service.getCharacteristic(Characteristic.On);
+						var curValue = false;
+						if (curCharacteristic != undefined) {
+							curValue = curCharacteristic.value;
+						}
+						debug("Current value of "+service.displayName+"="+curCharacteristic.value+". New value="+isSnowy);
+						if (curValue != isSnowy) {
+							// if value has changed or hasn't been set, set the new value
+							that.log("Changing value of " + service.displayName + " from " + curValue + " to "+isSnowy);
+							service.setCharacteristic(Characteristic.On, isSnowy);
+						}
 					}
 				}
 			});
