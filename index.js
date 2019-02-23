@@ -25,8 +25,8 @@ function SnowSwitchPlatform(log, config) {
 
 	this.station = new snowwatch.SnowWatch(key, latitude, longitude, precipProbabilityMin);
 
-	this.interval = ('forecastFrequency' in config ? parseInt(config['forecastFrequency']) : 4);
-	this.interval = (typeof this.interval !=='number' || (this.interval%1)!==0 || this.interval < 0) ? 4 : this.interval;
+	this.interval = ('forecastFrequency' in config ? parseInt(config['forecastFrequency']) : 15);
+	this.interval = (typeof this.interval !=='number' || (this.interval%1)!==0 || this.interval < 0) ? 15 : this.interval;
 
 	// number of hours to consider "snowing soon" or "snowed recently"
 	this.beforeSnowStarts = ('beforeSnowStarts' in config ? parseInt(config['beforeSnowStarts']) : 3);

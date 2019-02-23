@@ -21,17 +21,17 @@ There are other changes as well, like separate config values for how long in adv
 
 Add the following information to your config file.
 
-**key** is the *Secret Key* as assigned from [DarkSky](https://darksky.net/dev)
+**key** [no default] is the *Secret Key* as assigned from [DarkSky](https://darksky.net/dev)
 
-**latitude** and **longitude** fields identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
+**latitude** and **longitude** fields [no default] identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
 
-**forecastFrequency** field is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day. I set mine to **30**.
+**forecastFrequency** field [default=15] is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day.
 
-**beforeSnowStarts** field is number of **hours** before snow starts that the switch should go **on**.
+**beforeSnowStarts** field [default=3] is number of **hours** before snow starts that the switch should go **on**.
 
-**afterSnowStops**  field is number of **hours** after snow stops that the switch should go **off**.
+**afterSnowStops** field [default=3] is number of **hours** after snow stops that the switch should go **off**.
 
-**precipProbabilityMin**  field is minimum probability of snow that you want to consider it snowy (default is 0.5). From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
+**precipProbabilityMin** field [default=0.5] is minimum probability of snow that you want to consider it snowy. From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
 
 
 
