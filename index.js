@@ -58,7 +58,7 @@ SnowSwitchPlatform.prototype = {
 				for (var i = 0; i < that.accessories.length; i++) {
 					if (that.accessories[i].isSnowyService !== undefined) {
 						let service = that.accessories[i].isSnowyService;
-						let curCharacteristic = service.getCharacteristic(Characteristic.On);
+						let curCharacteristic = service.getCharacteristic(Characteristic.OccupancyDetected);
 						var curValue = false;
 						if (curCharacteristic != undefined) {
 							curValue = curCharacteristic.value;
@@ -67,7 +67,7 @@ SnowSwitchPlatform.prototype = {
 						if (curValue != isSnowy) {
 							// if value has changed or hasn't been set, set the new value
 							that.log("Changing value of " + service.displayName + " from " + curValue + " to "+isSnowy);
-							service.setCharacteristic(Characteristic.On, isSnowy);
+							service.setCharacteristic(Characteristic.OccupancyDetected, isSnowy);
 						}
 					}
 				}
@@ -82,7 +82,7 @@ function IsSnowyAccessory(platform) {
 	this.log = platform.log;
 	this.name = "IsSnowy";
 
-	this.isSnowyService = new Service.Switch(this.name);
+	this.isSnowyService = new Service.OccupancySensor(this.name);
 
 	this.informationService = new Service.AccessoryInformation();
 	this.informationService
