@@ -34,6 +34,11 @@ function SnowSensePlatform(log, config) {
   this.afterSnowStops = ('afterSnowStops' in config ? parseInt(config['afterSnowStops']) : 3);
   this.afterSnowStops = (typeof this.afterSnowStops !=='number' || (this.afterSnowStops%1)!==0 || this.afterSnowStops < 0) ? 3 : this.afterSnowStops;
 
+  this.sensorConfig = ('sensors' in config ? config['sensors'] : '');
+  if (this.sensorConfig == '') {
+    this.sensorConfig = 'past,present,future,any';
+  }
+
   this.updateWeather();
 }
 
@@ -41,17 +46,36 @@ SnowSensePlatform.prototype = {
   accessories: function(callback) {
     this.accessories = [];
     
-    let isSnowyAccessory = new IsSnowyAccessory(this);
-    this.accessories.push(isSnowyAccessory);
+    for (let sensor of this.sensorConfig.split(",")) {
+      switch(sensor.trim().toLowerCase()) {
+        case 'past':
+          debug("adding PAST sensor");
+          let wasSnowingAccessory = new WasSnowingAccessory(this);
+          this.accessories.push(wasSnowingAccessory);
+          break;
+        case 'present':
+        case 'now':
+          debug("adding PRESENT sensor");
+          let isSnowingAccessory = new IsSnowingAccessory(this);
+          this.accessories.push(isSnowingAccessory);
+          break;
+        case 'future':
+        case 'later':
+          debug("adding FUTURE sensor");
+          let willSnowAccessory = new WillSnowAccessory(this);
+          this.accessories.push(willSnowAccessory);
+          break;
+        case 'any':
+        case 'all':
+          debug("adding ANY sensor");
+          let isSnowyAccessory = new IsSnowyAccessory(this);
+          this.accessories.push(isSnowyAccessory);
+      }
+    }
 
-    let wasSnowingAccessory = new WasSnowingAccessory(this);
-    this.accessories.push(wasSnowingAccessory);
 
-    let isSnowingAccessory = new IsSnowingAccessory(this);
-    this.accessories.push(isSnowingAccessory);
 
-    let willSnowAccessory = new WillSnowAccessory(this);
-    this.accessories.push(willSnowAccessory);
+
 
     callback(this.accessories);
   },

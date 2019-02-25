@@ -30,6 +30,13 @@ Add the following information to your config file.
 
 **precipProbabilityMin** field [default=0.5] is minimum probability of snow that you want to consider it snowy. From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
 
+**sensors** field [default=''] is a comma-delimited list of sensors to load. If this is left empty, they will all be added. The four available sensors are:
+
+  * **past**: Load the **WasSnowing** sensor, indicating if it has snowed in the past within the time of **afterSnowStops**.
+  * **present**: Load the **IsSnowing** sensor, indicating that it is currently snowing.
+  * **future**: Load the **WillSnow** sensor, indicating that it is forecasted to snow in the future within the time of **beforeSnowStarts**.
+  * **any**: Load the **IsSnowy** sensor, which is all of the above and is extra optimistic by showing snow even if it was only forecasted but didn't actually snow in recent hours. It continues to be "snowy" even if there is no longer a forecast of snow.
+
 
 
 ```json
@@ -43,7 +50,8 @@ Add the following information to your config file.
 		"forecastFrequency": 15,
 		"beforeSnowStarts": 3,
 		"afterSnowStops": 3,
-		"precipProbabilityMin": 0.25
+		"precipProbabilityMin": 0.25,
+		"sensors": "any, present, future"
 	}
 ]
 ```
