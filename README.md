@@ -1,19 +1,16 @@
-# homebridge-snowswitch
+# homebridge-snowsense
 A switch that turns on when it's showing out using local weather forecast
 
-This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple switch that automatically switches ON when it's going to snow soon and OFF a while after it stops snowing.
+This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple Occupancy Sensor that automatically detects occupancy ON when it's going to snow soon and OFF a while after it stops snowing. Think of **snow** being the **occupant** and you have ample warning of when the (un)welcome guest arrives.
 
-## Important Upgrade Info
+This is based on my earlier project, [homebridge-snowswitch](https://github.com/bbernstein/homebridge-snowswitch) that was similar but acted as a switch rather than a sensor.
 
-**If upgrading from 1.0 to 1.1. We have changed weather provider to [DarkSky](https://darksky.net/dev) which 
-uses latitude/longitude for location.**
-There are other changes as well, like separate config values for how long in advance and after snow is detected to turn on/off the switch.
-
+Thanks to [rmkjr](https://github.com/rmkjr) for suggeting moving from a Switch to an Occupancy Sensor.
 
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g homebridge-snowswitch`
+2. Install this plugin using: `npm install -g homebridge-snowsense`
 3. Gather a free *Secret Key* for  [Dark Sky API](https://darksky.net/dev)
 4. Update your configuration file. Read below.
 
@@ -27,9 +24,9 @@ Add the following information to your config file.
 
 **forecastFrequency** field [default=15] is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day.
 
-**beforeSnowStarts** field [default=3] is number of **hours** before snow starts that the switch should go **on**.
+**beforeSnowStarts** field [default=3] is number of **hours** before snow starts that the occupancy should go **on**.
 
-**afterSnowStops** field [default=3] is number of **hours** after snow stops that the switch should go **off**.
+**afterSnowStops** field [default=3] is number of **hours** after snow stops that the occupancy should go **off**.
 
 **precipProbabilityMin** field [default=0.5] is minimum probability of snow that you want to consider it snowy. From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
 
@@ -38,8 +35,8 @@ Add the following information to your config file.
 ```json
 "platforms": [
 	{
-		"platform": "SnowSwitch",
-		"name": "Snow Switch",
+		"platform": "SnowSense",
+		"name": "Snow Sense",
 		"key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
 		"latitude": "42.326",
 		"longitude": "-71.220",

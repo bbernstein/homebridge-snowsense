@@ -1,7 +1,7 @@
 {
-  "name": "homebridge-snowswitch",
-  "version": "1.1.3",
-  "description": "A simple snow checker, using DarkSky for forecast and current conditions",
+  "name": "homebridge-snowsense",
+  "version": "1.0.0",
+  "description": "A simple snow checker acting as an Occupancy Sensor, using DarkSky for forecast and current conditions",
   "license": "MIT",
   "keywords": [
     "homebridge-plugin",
@@ -9,7 +9,7 @@
     "weather forecast",
     "weather condition",
     "snow",
-    "switch accessory"
+    "occupancy accessory"
   ],
   "engines": {
     "node": ">=0.12.0",
@@ -18,14 +18,14 @@
   "author": "Bernie Bernstein",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bbernstein/homebridge-snowswitch.git"
+    "url": "git+https://github.com/bbernstein/homebridge-snowsense.git"
   },
   "dependencies": {
     "dark-sky": "^1.1.4",
     "debug": "^2.6.9"
   },
   "bugs": {
-    "url": "https://github.com/bbernstein/homebridge-snowswitch/issues"
+    "url": "https://github.com/bbernstein/homebridge-snowsense/issues"
   },
-  "homepage": "https://github.com/bbernstein/homebridge-snowswitch#readme"
+  "homepage": "https://github.com/bbernstein/homebridge-snowsense#readme"
 }
