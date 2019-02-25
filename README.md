@@ -41,18 +41,18 @@ Add the following information to your config file.
 
 ```json
 "platforms": [
-	{
-		"platform": "SnowSense",
-		"name": "Snow Sense",
-		"key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
-		"latitude": "42.326",
-		"longitude": "-71.220",
-		"forecastFrequency": 15,
-		"beforeSnowStarts": 3,
-		"afterSnowStops": 3,
-		"precipProbabilityMin": 0.25,
-		"sensors": "any, present, future"
-	}
+  {
+    "platform": "SnowSense",
+    "name": "Snow Sense",
+    "key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
+    "latitude": "42.326",
+    "longitude": "-71.220",
+    "forecastFrequency": 15,
+    "beforeSnowStarts": 3,
+    "afterSnowStops": 3,
+    "precipProbabilityMin": 0.25,
+    "sensors": "any, present, future"
+  }
 ]
 ```
 
