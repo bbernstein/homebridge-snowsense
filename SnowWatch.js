@@ -64,8 +64,12 @@ SnowWatch.prototype.snowedRecently = function(hoursInPast) {
   let result = millisInPast < this.lastTimeSnowForecasted;
   if (result) {
     // just for debugging, not used elsewhere
-    let howManyMinutesAgo = (this.lastTimeSnowForecasted - now) / (1000 * 60);
-    debug("snowedRecently? "+result+" minutesAgo: "+howManyMinutesAgo);
+    let howManyMinutesAgo = (now - this.lastTimeSnowForecasted) / (1000 * 60);
+    debug("snowedRecently? "+(result?"YES":"NO")+" minutesAgo: "+howManyMinutesAgo);
+  }
+  else {
+    // no snow in forecast and timeout has lapsed, forget about snow
+    this.hasSwowed = false;
   }
   return result;
 }
@@ -115,8 +119,6 @@ SnowWatch.prototype.snowingSoon = function(hoursInFuture) {
       return true;
     }
     debug("NOT snowing now or soon");
-    // no snow in forecast and timeout has lapsed, forget about snow
-    that.hasSwowed = false;
     
     return false;
   })

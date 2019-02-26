@@ -72,11 +72,6 @@ SnowSensePlatform.prototype = {
           this.accessories.push(isSnowyAccessory);
       }
     }
-
-
-
-
-
     callback(this.accessories);
   },
 
@@ -92,7 +87,11 @@ SnowSensePlatform.prototype = {
         let hasSnowed = that.station.hasSnowed;
 
         let isSnowy = wasSnowing || isSnowing || willSnow;
-        debug("isSnowy="+isSnowy+" past="+hasSnowed+" now="+isSnowing+" willSnow="+willSnow);
+        debug("isSnowy="+(isSnowy?"YES":"NO") +
+            " past="+(hasSnowed?"YES":"NO") +
+            " now="+(isSnowing?"YES":"NO") +
+            " willSnow="+(willSnow?"YES":"NO"));
+
         for (var i = 0; i < that.accessories.length; i++) {
           let snowTime = that.accessories[i].snowTime;
           if (snowTime !== undefined) {

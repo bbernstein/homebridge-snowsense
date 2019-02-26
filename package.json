@@ -1,6 +1,6 @@
 {
   "name": "homebridge-snowsense",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple snow checker acting as an Occupancy Sensor, using DarkSky for forecast and current conditions",
   "license": "MIT",
   "keywords": [
