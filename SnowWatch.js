@@ -69,7 +69,7 @@ SnowWatch.prototype.snowedRecently = function(hoursInPast) {
   }
   else {
     // no snow in forecast and timeout has lapsed, forget about snow
-    this.hasSwowed = false;
+    this.hasSnowed = false;
   }
   return result;
 }
