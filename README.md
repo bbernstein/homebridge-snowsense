@@ -1,5 +1,5 @@
 # homebridge-snowsense
-A switch that turns on when it's showing out using local weather forecast
+An Occupancy Sensor that indicates snowy conditions using local weather forecast
 
 This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple Occupancy Sensor that automatically detects occupancy ON when it's going to snow soon and OFF a while after it stops snowing. Think of **snow** being the **occupant** and you have ample warning of when the (un)welcome guest arrives.
 
