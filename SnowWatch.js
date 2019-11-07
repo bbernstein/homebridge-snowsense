@@ -47,10 +47,12 @@ SnowWatch.prototype.isSnowyEnough = function(forecast) {
     + ", minProb=" + this.precipProbabilityMin
     + ", enough? " + (forecast.precipProbability >= this.precipProbabilityMin));
   return (
-        forecast.precipType == 'snow' 
-      ||  forecast.precipType == 'sleet'
+    (
+      (forecast.precipType == 'snow' || forecast.precipType == 'sleet')
+      || forecast.temperature <= 34
     )
-    && forecast.precipProbability >= this.precipProbabilityMin;
+    && forecast.precipProbability >= this.precipProbabilityMin
+  );
 }
 
 SnowWatch.prototype.lastSnowPrediction = function() {
