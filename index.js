@@ -16,6 +16,8 @@ function SnowSensePlatform(log, config) {
   let key = config['key']
   let latitude = config['latitude']
   let longitude = config['longitude']
+  let units = config['units'] || 'si'
+  let precipTempIsSnow = config['precipTempIsSnow']
 
   // minimum probability of snow to consider it "snowy". Default 50% (0.5)
   var precipProbabilityMin = ('precipProbabilityMin' in config ? config['precipProbabilityMin'] : 0.5)
@@ -23,7 +25,7 @@ function SnowSensePlatform(log, config) {
     precipProbabilityMin = 0.5
   }
 
-  this.station = new snowwatch.SnowWatch(key, latitude, longitude, precipProbabilityMin);
+  this.station = new snowwatch.SnowWatch(key, latitude, longitude, units, precipProbabilityMin, precipTempIsSnow);
 
   this.interval = ('forecastFrequency' in config ? parseInt(config['forecastFrequency']) : 15);
   this.interval = (typeof this.interval !=='number' || (this.interval%1)!==0 || this.interval < 0) ? 15 : this.interval;
