@@ -6,24 +6,28 @@ debug = require('debug')('snowwatch'),
 DarkSky = require('dark-sky');
 
 
-function SnowWatch(apiKey, latitude, longitude, precipProbabilityMin) {
+function SnowWatch(apiKey, latitude, longitude, units, precipProbabilityMin, precipTempIsSnow) {
   this.latestForecast = null;
   this.latestForecastTime = null;
   this.apiKey = apiKey;
   this.latitude = latitude;
   this.longitude = longitude;
   this.precipProbabilityMin = precipProbabilityMin
+  this.precipTempIsSnow = precipTempIsSnow
+  this.units = units;
+  this.lang = 'en';
 
   this.lastTimeSnowForecasted = -1;
   this.currentlySnowing = false;
   this.snowPredicted = false;
   this.hasSnowed = false;
 
+  debug("setting up darksky for lat=%s, lon=%s, lang=%s, units=%s", this.latitude, this.longitude, this.lang, this.units);
   this.client = new DarkSky(this.apiKey)
           .longitude(this.longitude)
           .latitude(this.latitude)
-          .units('si')
-          .language('en')
+          .units(this.units)
+          .language(this.lang)
           .exclude('daily,minutely,flags,alerts');
 }
 
@@ -41,18 +45,15 @@ SnowWatch.prototype.getWeather = function() {
 
 SnowWatch.prototype.isSnowyEnough = function(forecast) {
   let ftime = new Date(forecast.time * 1000);   // convert seconds to millis
-  debug("snowy? time=" + ftime.toLocaleTimeString()
-    + " precip=" + forecast.precipType 
-    + ", prob=" + forecast.precipProbability 
-    + ", minProb=" + this.precipProbabilityMin
-    + ", enough? " + (forecast.precipProbability >= this.precipProbabilityMin));
-  return (
-    (
-      (forecast.precipType == 'snow' || forecast.precipType == 'sleet')
-      || forecast.temperature <= 34
-    )
-    && forecast.precipProbability >= this.precipProbabilityMin
-  );
+  const result = (
+          forecast.precipType == 'snow' || forecast.precipType == 'sleet'
+          || (this.precipTempIsSnow && forecast.temperature <= this.precipTempIsSnow)
+      )
+      && forecast.precipProbability >= this.precipProbabilityMin;
+  debug("time=%s, precip=%s, prob=%s, minProb=%s, temp=%s, minTemp=%s, result=%s",
+      ftime.toLocaleTimeString(), forecast.precipType, forecast.precipProbability,
+      this.precipProbabilityMin, forecast.temperature, this.precipTempIsSnow, result?"YES":"NO");
+  return result;
 }
 
 SnowWatch.prototype.lastSnowPrediction = function() {

@@ -22,6 +22,8 @@ Add the following information to your config file.
 
 **latitude** and **longitude** fields [no default] identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
 
+**units** [default='si'] is the units defined in [DarkSky Docs](https://darksky.net/dev/docs). This defines the unit for Fahrenheit vs Celcius and Inches vs Millimeters (if needed).
+
 **forecastFrequency** field [default=15] is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day.
 
 **beforeSnowStarts** field [default=3] is number of **hours** before snow starts that the occupancy should go **on**.
@@ -29,6 +31,8 @@ Add the following information to your config file.
 **afterSnowStops** field [default=3] is number of **hours** after snow stops that the occupancy should go **off**.
 
 **precipProbabilityMin** field [default=0.5] is minimum probability of snow that you want to consider it snowy. From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
+
+**precipTempIsSnow** field [no default] is the temperature at which we should assume it's snowing if there is precipitation. In some areas, the precipitation type may not work so we can just check see if there is precipitation and temperature below this number (in *units* set above). If this is not set, we will not use temperature.
 
 **sensors** field [default=''] is a comma-delimited list of sensors to load. If this is left empty, they will all be added. The four available sensors are:
 
@@ -47,6 +51,7 @@ Add the following information to your config file.
     "key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
     "latitude": "42.326",
     "longitude": "-71.220",
+    "units": "us",
     "forecastFrequency": 15,
     "beforeSnowStarts": 3,
     "afterSnowStops": 3,
