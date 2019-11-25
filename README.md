@@ -43,7 +43,7 @@ Add the following information to your config file.
 
 
 
-```json
+```
 "platforms": [
   {
     "platform": "SnowSense",
