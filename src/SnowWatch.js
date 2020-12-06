@@ -1,54 +1,46 @@
-'use strict';
+const debug = require('debug')('homebridge-snowwatch');
+const weather = require('./Weather');
 
-const debug = require('debug')('snowwatch');
-const DarkSky = require('dark-sky');
-
-function SnowWatch(apiKey, latitude, longitude, units, precipProbabilityMin, precipTempIsSnow) {
+function SnowWatch(provider, apiKey, latitude, longitude, units, precipTempIsSnow) {
     this.latestForecast = null;
     this.latestForecastTime = null;
-    this.apiKey = apiKey;
-    this.latitude = latitude;
-    this.longitude = longitude;
-    this.precipProbabilityMin = precipProbabilityMin;
     this.precipTempIsSnow = precipTempIsSnow;
-    this.units = units;
-    this.lang = 'en';
 
     this.lastTimeSnowForecasted = -1;
     this.currentlySnowing = false;
     this.snowPredicted = false;
     this.hasSnowed = false;
 
-    debug("setting up darksky for lat=%s, lon=%s, lang=%s, units=%s", this.latitude, this.longitude, this.lang, this.units);
-    this.client = new DarkSky(this.apiKey)
-        .longitude(this.longitude)
-        .latitude(this.latitude)
-        .units(this.units)
-        .language(this.lang)
-        .exclude('daily,minutely,flags,alerts');
+    this.weather = new weather.Weather(provider, apiKey, latitude, longitude, units);
 }
 
-SnowWatch.prototype.getWeather = function () {
+SnowWatch.prototype.readWeather = async function () {
+    return await this.weather.readWeather();
+}
+
+SnowWatch.prototype.getWeather = async function () {
     let now = Date.now();
     let cacheMillis = 1000 * 60 * 5;  // 5 minute cache, don't check more frequently than that
     if (this.latestForecast == null || this.latestForecastTime == null || this.latestForecastTime < now - cacheMillis) {
         debug("Reading new forecast at " + (new Date(now)).toLocaleTimeString());
-        this.latestForecast = this.client.get();
+        this.latestForecast = await this.readWeather();
         this.latestForecastTime = now;
     }
     return this.latestForecast;
 };
 
 SnowWatch.prototype.isSnowyEnough = function (forecast) {
-    const ftime = new Date(forecast.time * 1000);   // convert seconds to millis
+    const ftime = new Date(forecast.dt * 1000);   // convert seconds to millis
     const result = (
-            forecast.precipType === 'snow' || forecast.precipType === 'sleet'
-            || (this.precipTempIsSnow && forecast.temperature <= this.precipTempIsSnow)
+            forecast.hasSnow
+            || (this.precipTempIsSnow && forecast.temp <= this.precipTempIsSnow)
         )
-        && forecast.precipProbability >= this.precipProbabilityMin;
-    debug("time=%s, precip=%s, prob=%s, minProb=%s, temp=%s, snowTemp=%s, result=%s",
-        ftime.toLocaleTimeString(), forecast.precipType, forecast.precipProbability,
-        this.precipProbabilityMin, forecast.temperature, this.precipTempIsSnow, result ? "YES" : "NO");
+        && forecast.hasPrecip;
+    if (forecast.temp > 50) {
+        debug("forecast: %o"+forecast);
+    }
+    debug("time=%s, precip=%s, temp=%s, snowTemp=%s, result=%s",
+        ftime.toLocaleTimeString(), forecast.hasPrecip, forecast.temp, this.precipTempIsSnow, result ? "YES" : "NO");
     return result;
 };
 
@@ -68,12 +60,11 @@ SnowWatch.prototype.snowedRecently = function (hoursInPast) {
     return result;
 };
 
-SnowWatch.prototype.snowingSoon = function (hoursInFuture) {
+SnowWatch.prototype.snowingSoon = async function (hoursInFuture) {
     debug("Calling snowingSoon");
     const that = this;
-    return this.getWeather().then(result => {
-
-        // debug("forecast: "+JSON.stringify(result, null, '  '));
+    try {
+        const result = await this.getWeather();
 
         const now = Date.now();
         let millisInFuture = now + hoursInFuture * 60 * 60 * 1000;
@@ -83,15 +74,15 @@ SnowWatch.prototype.snowingSoon = function (hoursInFuture) {
 
         // if there is snow in the current hour, we're done
         debug("checking current conditions");
-        if (that.isSnowyEnough(result.currently)) {
+        if (that.isSnowyEnough(result.current)) {
             currentlySnowing = true;
             debug("snowing CURRENTLY");
         }
 
         // check for the next (hoursInFuture) hours if an snow-like icon is spotted
         debug("checking forecast hours");
-        for (const hourWeather of result.hourly.data) {
-            const hourMillis = hourWeather.time * 1000;
+        for (const hourWeather of result.hourly) {
+            const hourMillis = hourWeather.dt * 1000;
             if (hourMillis <= millisInFuture) {
                 if (that.isSnowyEnough(hourWeather)) {
                     snowPredicted = true;
@@ -114,7 +105,9 @@ SnowWatch.prototype.snowingSoon = function (hoursInFuture) {
         debug("NOT snowing now or soon");
 
         return false;
-    })
+    } catch (e) {
+        console.error("Error SnowWatch.prototype.snowingSoon", e);
+    }
 };
 
 module.exports = {
