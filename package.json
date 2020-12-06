@@ -1,6 +1,6 @@
 {
   "name": "homebridge-snowsense",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A simple snow checker acting as an Occupancy Sensor, using DarkSky for forecast and current conditions",
   "license": "MIT",
   "keywords": [
@@ -21,7 +21,7 @@
     "url": "git+https://github.com/bbernstein/homebridge-snowsense.git"
   },
   "dependencies": {
-    "dark-sky": "^1.1.4",
+    "axios": "^0.21.0",
     "debug": "^2.6.9"
   },
   "bugs": {

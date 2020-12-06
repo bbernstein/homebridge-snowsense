@@ -11,26 +11,26 @@ Thanks to [rmkjr](https://github.com/rmkjr) for suggeting moving from a Switch t
 
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-snowsense`
-3. Gather a free *Secret Key* for  [Dark Sky API](https://darksky.net/dev)
+3. Sign up and get a free *API Key* from  [OpenWeather API](https://openweathermap.org/api/)
 4. Update your configuration file. Read below.
 
 ## Configuration
 
 Add the following information to your config file.
 
-**key** [no default] is the *Secret Key* as assigned from [DarkSky](https://darksky.net/dev)
+**provider** [default='darksky'] (values 'darksky' or 'openweathermap') [DarkSky](https://darksky.net/dev) still works if you have an old API key, but I recommand moving to [OpenWeather](https://openweathermap.org/api) instead.
+
+**key** [no default] is the *Secret Key* as assigned from [DarkSky](https://darksky.net/dev) or [OpenWeather](https://openweathermap.org/api)
 
 **latitude** and **longitude** fields [no default] identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
 
-**units** [default='si'] is the units defined in [DarkSky Docs](https://darksky.net/dev/docs). This defines the unit for Fahrenheit vs Celcius and Inches vs Millimeters (if needed).
+**units** [default='imperial'] (values 'standard', 'metric' or 'imperial') is the units defined in [OpenWeather Docs](https://openweathermap.org/api/one-call-api). This defines the unit for Fahrenheit vs Celcius and Inches vs Millimeters (if needed). 
 
 **forecastFrequency** field [default=15] is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day.
 
 **beforeSnowStarts** field [default=3] is number of **hours** before snow starts that the occupancy should go **on**.
 
 **afterSnowStops** field [default=3] is number of **hours** after snow stops that the occupancy should go **off**.
-
-**precipProbabilityMin** field [default=0.5] is minimum probability of snow that you want to consider it snowy. From my exerimenting, it appeared that the "snowing" icon is displayed when that probability is over 0.5, but you may want to be more pessimistic. Thanks to [i3laze](https://github.com/i3laze) for the suggestion.
 
 **precipTempIsSnow** field [no default] is the temperature at which we should assume it's snowing if there is precipitation. In some areas, the precipitation type may not work so we can just check see if there is precipitation and temperature below this number (in *units* set above). If this is not set, we will not use temperature.
 
@@ -55,7 +55,6 @@ Add the following information to your config file.
     "forecastFrequency": 15,
     "beforeSnowStarts": 3,
     "afterSnowStops": 3,
-    "precipProbabilityMin": 0.25,
     "sensors": "any, present, future"
   }
 ]
@@ -78,6 +77,8 @@ This should work pretty well with any switches you can get working with [HomeKit
 I had originally made additions to [homebridge-weather-station-extended](https://github.com/naofireblade/homebridge-weather-station-extended), a more sophisticated weather forecasting add-on where I had added fields indicating that it had snowed recently or was expected to snow soon, but that required more complex setup from the iPhone App. I wanted to make something simpler at the front-end and have this single-purpose.
 
 Thanks to @mbriney on github for pointing out that the wunderground api is going away and suggesting DarkSky for the replacement api.
+
+Thanks to @apollo316 on github for pointing out that the DarkSky api is going away and @nicoryan and others for recommending OpenWeather.
 
 ## How to set up the automation
 

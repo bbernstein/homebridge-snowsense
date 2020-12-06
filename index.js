@@ -1,6 +1,5 @@
-"use strict";
-const debug = require('debug')('homebridge-snowsense');
-const snowwatch = require('./SnowWatch');
+const debug = require('debug')('homebridge-snowwatch');
+const snowwatch = require('./src/SnowWatch');
 let Service, Characteristic;
 
 module.exports = function (homebridge) {
@@ -9,21 +8,63 @@ module.exports = function (homebridge) {
     homebridge.registerPlatform("homebridge-snowsense", "SnowSense", SnowSensePlatform);
 };
 
+// NOT A REAL TEST, JUST FOR DEBUGGING
+// test()
+//     .then(() => {
+//         console.log("done");
+//     });
+
+// async function test() {
+//     const openweathermapkey = "GET_KEY";
+//     const darkskykey = "GET_KEY";
+//
+//     // const latitude = "42.326";
+//     // const longitude = "-71.220";
+//
+//     // a snowy place in russia
+//     const latitude = "44.80";
+//     const longitude = "-68.78";
+//
+//     const units = "imperial";
+//
+//     const precipTempIsSnow = 32;
+//
+//     var snowingSoon;
+//     const futurehours = 5;
+//
+//     const watcherdarksky = new snowwatch.SnowWatch('darksky', darkskykey, latitude, longitude, units, precipTempIsSnow);
+//
+//     snowingSoon = await watcherdarksky.snowingSoon(futurehours);
+//     console.log("darksky snowingSoon:", snowingSoon);
+//
+//     const watcheropenweathermap = new snowwatch.SnowWatch('openweathermap', openweathermapkey, latitude, longitude, units, precipTempIsSnow);
+//     snowingSoon = await watcheropenweathermap.snowingSoon(futurehours);
+//     console.log("openweathermap snowingSoon:", snowingSoon);
+// }
+
 function SnowSensePlatform(log, config) {
     this.log = log;
+    const provider = config['provider'] || 'darksky';
     const key = config['key'];
     const latitude = config['latitude'];
     const longitude = config['longitude'];
-    const units = config['units'] || 'si';
     const precipTempIsSnow = config['precipTempIsSnow'];
 
-    // minimum probability of snow to consider it "snowy". Default 50% (0.5)
-    let precipProbabilityMin = ('precipProbabilityMin' in config ? config['precipProbabilityMin'] : 0.5);
-    if (typeof precipProbabilityMin != 'number' || precipProbabilityMin < 0 || precipProbabilityMin > 1.0) {
-        precipProbabilityMin = 0.5
+    let units = config['units'];
+
+    // in case units were one of the darksky values
+    switch (units) {
+        case "si": units = "metric"; break;
+        case "us": units = "imperial"; break;
+        case "uk": units = "metric"; break;
+        case "ca": units = "metric"; break;
     }
 
-    this.station = new snowwatch.SnowWatch(key, latitude, longitude, units, precipProbabilityMin, precipTempIsSnow);
+    if (!["imperial", "metric", "standard"].includes(units)) {
+        units = "imperial";
+    }
+
+    this.station = new snowwatch.SnowWatch(provider, key, latitude, longitude, units, precipTempIsSnow);
 
     this.interval = ('forecastFrequency' in config ? parseInt(config['forecastFrequency']) : 15);
     this.interval = (typeof this.interval !== 'number' || (this.interval % 1) !== 0 || this.interval < 0) ? 15 : this.interval;
