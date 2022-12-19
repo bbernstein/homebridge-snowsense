@@ -128,10 +128,10 @@ export default class SnowForecastService {
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
     const response = await axios.get(geocodingApiUrl);
-    if (!response.data || response.data.cod) {
+    if (!response || !response.data || response.data.cod) {
       throw new Error(`No location found for zip code (${zip})`);
     }
-    this.logger.debug(`converting zip=[${zip}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
+    this.logger.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
     return response.data;
   }
 
