@@ -5,59 +5,62 @@ This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is
 
 This is based on my earlier project, [homebridge-snowswitch](https://github.com/bbernstein/homebridge-snowswitch) that was similar but acted as a switch rather than a sensor.
 
-Thanks to [rmkjr](https://github.com/rmkjr) for suggeting moving from a Switch to an Occupancy Sensor.
+
+## New in v2.x
+
+The app was mostly rewritten in TypeScript with settings now compatible with [homebridge-config-ui-x](https://www.npmjs.com/package/homebridge-config-ui-x) so it can be installed and configured without manually editing a config file.
+
 
 ## Installation
 
+For any installation, you'll first need to get an *API Key* from [OpenWeather API](https://openweathermap.org/api/).
+
+### Homebridge UI
+
+Go to 'Plugins' page, search for `homebridge-snoseense` and click 'install'.
+
+### Manually
+
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-snowsense`
-3. Sign up and get a free *API Key* from  [OpenWeather API](https://openweathermap.org/api/)
-4. Update your configuration file. Read below.
+3. Update your configuration file. Read below.
 
 ## Configuration
 
+### Homebridge UI
+
+Click the 'Settings' button for the plugin and enter the required information.
+
+### Manually
+
 Add the following information to your config file.
 
-**provider** [default='darksky'] (values 'darksky' or 'openweathermap') [DarkSky](https://darksky.net/dev) still works if you have an old API key, but I recommand moving to [OpenWeather](https://openweathermap.org/api) instead.
+**apiKey** [no default] is the *Secret Key* as assigned from [OpenWeather](https://openweathermap.org/api)
 
-**key** [no default] is the *Secret Key* as assigned from [DarkSky](https://darksky.net/dev) or [OpenWeather](https://openweathermap.org/api)
+**location** field [no default] identifies the location for the snow checking. It can be a "city,state,country" (eg "Boston,MA,US"), or zip code (eg 02134), or "latitude,longitude" pair.
 
-**latitude** and **longitude** fields [no default] identify the location for the snow checking. You can find the coordinates by looking at [Google Maps](https://maps.google.com/) and finding the numbers after the **@** symbol. Eg: **@40.7484405,-73.9878584** means Latitude is 40.748 and Longitude is -73.988.
+**units** [default='imperial'] (values 'metric' or 'imperial') is the units defined in [OpenWeather Docs](https://openweathermap.org/api/one-call-api). Basically, 'imperial' is Fahrenheit and 'metric' is Celcius. 
 
-**units** [default='imperial'] (values 'standard', 'metric' or 'imperial') is the units defined in [OpenWeather Docs](https://openweathermap.org/api/one-call-api). This defines the unit for Fahrenheit vs Celcius and Inches vs Millimeters (if needed). 
+**hoursBeforeSnowIsSnowy** field [default=3] is number of **hours** before snow starts that the occupancy should go **on**.
 
-**forecastFrequency** field [default=15] is how frequently (in **minutes**) to download the weather forecast. Don't do it too frequently or you will use up your API limit for the day.
+**hoursAfterSnowIsSnowy** field [default=3] is number of **hours** after snow is last seen that the occupancy should go **off**.
 
-**beforeSnowStarts** field [default=3] is number of **hours** before snow starts that the occupancy should go **on**.
-
-**afterSnowStops** field [default=3] is number of **hours** after snow stops that the occupancy should go **off**.
-
-**precipTempIsSnow** field [no default] is the temperature at which we should assume it's snowing if there is precipitation. In some areas, the precipitation type may not work so we can just check see if there is precipitation and temperature below this number (in *units* set above). If this is not set, we will not use temperature.
-
-**sensors** field [default=''] is a comma-delimited list of sensors to load. If this is left empty, they will all be added. The four available sensors are:
-
-  * **past**: Load the **WasSnowing** sensor, indicating if it has snowed in the past within the time of **afterSnowStops**.
-  * **present**: Load the **IsSnowing** sensor, indicating that it is currently snowing.
-  * **future**: Load the **WillSnow** sensor, indicating that it is forecasted to snow in the future within the time of **beforeSnowStarts**.
-  * **any**: Load the **IsSnowy** sensor, which is all of the above and is extra optimistic by showing snow even if it was only forecasted but didn't actually snow in recent hours. It continues to be "snowy" even if there is no longer a forecast of snow.
+**coldPrecipitationThreshold** field [no default] is the temperature at which we should assume it's snowing if there is precipitation. In case there are places where the precipitation type may not work so we can just check see if there is precipitation and temperature below this number (in *units* set above). If this is not set, we will not use temperature.
 
 
+Here's what the config might look like inside the `platforms` section.
 
 ```
-"platforms": [
-  {
-    "platform": "SnowSense",
-    "name": "Snow Sense",
-    "key": "XXXXXXX_GET_YOUR_OWN_KEY_XXXXXXX",
-    "latitude": "42.326",
-    "longitude": "-71.220",
-    "units": "us",
-    "forecastFrequency": 15,
-    "beforeSnowStarts": 3,
-    "afterSnowStops": 3,
-    "sensors": "any, present, future"
-  }
-]
+{
+    "platform": "SnowSense"
+    "name": "SnowSense",
+    "apiKey": "**** get your key from OpenWeather ****",
+    "units": "imperial",
+    "location": "Boston,ma,us",
+    "hoursBeforeSnowIsSnowy": 3,
+    "hoursAfterSnowIsSnowy": 3,
+    "coldPrecipitationThreshold": 32
+}
 ```
 
 ## Why this exists
@@ -74,12 +77,6 @@ To make them work with [HomeKit](https://www.apple.com/ios/home/), I needed to g
 
 This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [DarkSky](https://darksky.net/dev) API key, then the HomeKit App end of this is pretty trivial. 
 
-I had originally made additions to [homebridge-weather-station-extended](https://github.com/naofireblade/homebridge-weather-station-extended), a more sophisticated weather forecasting add-on where I had added fields indicating that it had snowed recently or was expected to snow soon, but that required more complex setup from the iPhone App. I wanted to make something simpler at the front-end and have this single-purpose.
-
-Thanks to @mbriney on github for pointing out that the wunderground api is going away and suggesting DarkSky for the replacement api.
-
-Thanks to @apollo316 on github for pointing out that the DarkSky api is going away and @nicoryan and others for recommending OpenWeather.
-
 ## How to set up the automation
 
 - Launch the [iPhone or iPad **Home** app](https://support.apple.com/en-us/HT204893)
@@ -92,6 +89,7 @@ Thanks to @apollo316 on github for pointing out that the DarkSky api is going aw
 - Repeat for turning **Off** when the controller **Turns Off**
 
 
-## Contributors
+## Thanks
 
-This plugin borrowed code from and was inspired by [homebridge-weather-station-extended](https://github.com/naofireblade/homebridge-weather-station-extended) which is a fork of [homebridge-weather-station](https://github.com/kcharwood/homebridge-weather-station) which is a fork of [homebridge-wunderground](https://www.npmjs.com/package/homebridge-wunderground).
+* Thanks to @apollo316 on github for pointing out that the DarkSky api is going away and @nicoryan and others for recommending OpenWeather.
+* Thanks to @rmkjr for suggeting moving from a Switch to an Occupancy Sensor.

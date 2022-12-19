@@ -1,9 +1,8 @@
 {
-  "private": true,
   "displayName": "SnowSense",
   "name": "homebridge-snowsense",
-  "version": "1.0.1",
-  "description": "A short description about what your plugin does.",
+  "version": "2.0.0",
+  "description": "A simple snow checker acting as an Occupancy Sensor, using DarkSky for forecast and current conditions",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -28,7 +27,8 @@
     "homebridge-plugin",
     "snowsense",
     "snow",
-    "weather"
+    "weather",
+    "occupancy detector"
   ],
   "devDependencies": {
     "@types/jest": "^29.2.4",

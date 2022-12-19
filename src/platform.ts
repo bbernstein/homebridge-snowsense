@@ -60,6 +60,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
                 apiThrottleMinutes: config.apiThrottleMinutes,
                 hoursBeforeSnowIsSnowy: config.hoursBeforeSnowIsSnowy,
                 hoursAfterSnowIsSnowy: config.hoursAfterSnowIsSnowy,
+                coldPrecipitationThreshold: config.coldPrecipitationThreshold,
             });
         await this.watchWeather();
     }
