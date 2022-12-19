@@ -38,7 +38,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   ) {
     this.nextDelayTime = 1000;
     this.log.debug('Finished initializing platform:', this.config.name);
-    this.forecastFrequencyMillis = 1000 * 60 * config.apiThrottleMinutes;
+    this.forecastFrequencyMillis = 1000 * 60 * (config.apiThrottleMinutes || 15);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -57,7 +57,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         apiKey: config.apiKey,
         location: config.loction,
         units: config.units,
-        apiThrottleMinutes: config.apiThrottleMinutes,
+        apiThrottleMinutes: config.apiThrottleMinutes || 15,
         hoursBeforeSnowIsSnowy: config.hoursBeforeSnowIsSnowy,
         hoursAfterSnowIsSnowy: config.hoursAfterSnowIsSnowy,
         coldPrecipitationThreshold: config.coldPrecipitationThreshold,
