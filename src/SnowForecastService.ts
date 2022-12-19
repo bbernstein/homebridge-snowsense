@@ -131,6 +131,7 @@ export default class SnowForecastService {
     if (!response.data || response.data.cod) {
       throw new Error(`No location found for zip code (${zip})`);
     }
+    this.logger.debug(`converting zip=[${zip}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
     return response.data;
   }
 
@@ -149,6 +150,7 @@ export default class SnowForecastService {
       if (response.data.length === 0) {
         throw new Error(`No location found for city (${city})`);
       }
+      this.logger.debug(`converting city=[${city}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
       return response.data[0];
     });
   }

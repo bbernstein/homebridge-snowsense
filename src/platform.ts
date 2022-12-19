@@ -55,7 +55,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     await SnowWatch.init(this.log,
       {
         apiKey: config.apiKey,
-        location: config.loction,
+        location: config.location,
         units: config.units,
         apiThrottleMinutes: config.apiThrottleMinutes || 15,
         hoursBeforeSnowIsSnowy: config.hoursBeforeSnowIsSnowy,
