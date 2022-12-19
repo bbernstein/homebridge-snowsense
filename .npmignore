@@ -1,4 +1,22 @@
+# Ignore source code
+src
+
 # ------------- Defaults ------------- #
+
+# gitHub actions
+.github
+
+# eslint
+.eslintrc
+
+# typescript
+tsconfig.json
+
+# vscode
+.vscode
+
+# nodemon
+nodemon.json
 
 # Logs
 logs
@@ -83,7 +101,6 @@ web_modules/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -115,9 +132,3 @@ dist
 .yarn/unplugged
 .yarn/build-state.yml
 .pnp.*
-
-# Mac
-.DS_Store
-
-# ide
-.idea
