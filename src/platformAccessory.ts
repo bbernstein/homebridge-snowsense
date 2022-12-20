@@ -24,15 +24,20 @@ export class IsSnowyAccessory {
       this.accessory.addService(this.platform.Service.OccupancySensor);
 
     this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.displayName);
+    this.service.setCharacteristic(this.platform.Characteristic.OccupancyDetected, 0);
+  }
+
+  public setCharacteristic(service, value: boolean) {
+    const newValue = value ? 1 : 0;
+    this.platform.log.debug(`Setting value of ${this.accessory.displayName} to: `, newValue);
+    service.updateCharacteristic(this.platform.Characteristic.OccupancyDetected, newValue);
   }
 
   public updateValueIfChanged(service, value: boolean) {
     const oldCharacteristicValue = service.getCharacteristic(this.platform.Characteristic.OccupancyDetected);
-    const oldValue: 0 | 1 = oldCharacteristicValue.value ? 1 : 0;
-    const newValue: 0 | 1 = value ? 1 : 0;
-    if (oldValue !== newValue) {
-      this.platform.log.debug(`Changing value of ${this.accessory.displayName} to: `, newValue);
-      service.updateCharacteristic(this.platform.Characteristic.OccupancyDetected, newValue);
+    const oldValue: boolean = oldCharacteristicValue.value === 1; // 1 is true, 0 is false
+    if (oldValue !== value) {
+      this.setCharacteristic(service, value);
     }
   }
 }

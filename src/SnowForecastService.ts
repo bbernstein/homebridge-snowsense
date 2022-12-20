@@ -227,20 +227,14 @@ export default class SnowForecastService {
         this.logger.debug('Using cached weather');
       } else {
         this.logger.debug('Fetching new weather');
-        try {
-          const forecast = await this.getWeatherFromApi();
-          this.weatherCache = this.adjustForOpenWeatherMap(forecast);
+        const forecast = await this.getWeatherFromApi();
+        this.weatherCache = this.adjustForOpenWeatherMap(forecast);
 
-          // make one-liner output for debugging
-          const hours = this.weatherCache.hourly.slice(0, 4).map(h => h.hasSnow).join(',');
-          this.logger.debug(`Cur and 3 hours snow: ${hours}`);
+        // make one-liner output for debugging
+        const hours = this.weatherCache.hourly.slice(0, 4).map(h => h.hasSnow).join(',');
+        this.logger.debug(`Now and next 3 hours: ${hours}`);
 
-          this.latestWeatherTime = now;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-          this.logger.error(err);
-          throw err;
-        }
+        this.latestWeatherTime = now;
       }
       return this.weatherCache;
     } finally {

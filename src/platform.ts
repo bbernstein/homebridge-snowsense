@@ -67,7 +67,12 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
 
   private static async updateAccessories(that: SnowSensePlatform) {
     const watcher = SnowWatch.getInstance();
-    await watcher.updatePredictionStatus();
+    try {
+      await watcher.updatePredictionStatus();
+    } catch (e: any) {
+      that.log.error(`Error getting updated weather: ${e.message}`);
+      return;
+    }
     const wasSnowing = watcher.snowedRecently();
     const isSnowing = watcher.snowingNow();
     const willSnow = watcher.snowingSoon();
