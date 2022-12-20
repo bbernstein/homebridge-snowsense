@@ -144,7 +144,7 @@ export default class SnowWatch {
     const millisInPast = new Date().getTime() - (this.hoursSinceSnowStopped * 60 * 60 * 1000);
     const timeLastPredicted = this.lastTimeSnowForecasted ? new Date(this.lastTimeSnowForecasted) : '[NEVER]';
     this.logger.debug(`Last time snow forecasted: ${timeLastPredicted}`);
-    const result = (this.lastTimeSnowForecasted !== undefined) && (millisInPast < this.lastTimeSnowForecasted);
+    const result = (this.lastTimeSnowForecasted !== undefined) && (millisInPast <= this.lastTimeSnowForecasted);
     if (!result) {
       this.hasSnowed = false;
     }
@@ -158,11 +158,11 @@ export default class SnowWatch {
    * @returns true if it's snowing now or if it's predicted to snow in the next few hours
    */
   public snowingSoon(): boolean {
-    if (this.currentlySnowing || this.snowPredicted) {
-      this.lastTimeSnowForecasted = new Date().getTime();
-      return true;
-    }
-    return false;
+    return this.currentlySnowing || this.snowPredicted
+  }
+
+  public setSnowForecastedTime(time: Date) {
+    this.lastTimeSnowForecasted = time.getTime();
   }
 
   /**
@@ -212,7 +212,7 @@ export default class SnowWatch {
     }, Snowed recently: ${this.hasSnowed}`);
 
     if (this.currentlySnowing || this.snowPredicted) {
-      this.lastTimeSnowForecasted = nowMillis;
+      this.setSnowForecastedTime(new Date());
       return true;
     }
     return false;

@@ -150,8 +150,10 @@ export default class SnowForecastService {
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
     return axios.get(geocodingApiUrl).then((response) => {
-      if (response.data.length === 0) {
-        throw new Error(`No location found for city (${city})`);
+      if ((response as any).cod === 401) {
+        throw new Error((response as any).message)
+      } else if (response.data.length === 0) {
+        throw new Error(`No location found for city (${city}) *** Did you include a country code? eg "New York, NY, US" ***`);
       }
       this.logger.debug(`converting city=[${city}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
       return response.data[0];

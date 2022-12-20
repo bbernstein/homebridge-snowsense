@@ -172,7 +172,7 @@ describe('SnowForecastService', () => {
     });
   });
 
-  describe('City to lat,lon', () => {
+  describe('Test bad api url', () => {
     beforeEach(() => {
       axios.get = jest.fn()
         .mockImplementation(() => Promise.resolve({ data: {a: 1, b: 2} }));
@@ -182,7 +182,7 @@ describe('SnowForecastService', () => {
       jest.restoreAllMocks();
     });
 
-    it('should set lat,lon to values from city api', async () => {
+    it('should fail when no url', async () => {
       const weather = new SnowForecastService(console,
         {apiKey: 'xxx', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
@@ -190,8 +190,7 @@ describe('SnowForecastService', () => {
       const weatherProto = Object.getPrototypeOf(weather);
 
       try {
-        const result = await weatherProto.getWeatherFromApi();
-        console.log(`result=${JSON.stringify(result)}`);
+        await weatherProto.getWeatherFromApi();
       } catch (e: any) {
         expect(e.message).toContain('URL not yet set for openweathermap');
       }
