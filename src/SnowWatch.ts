@@ -158,7 +158,7 @@ export default class SnowWatch {
    * @returns true if it's snowing now or if it's predicted to snow in the next few hours
    */
   public snowingSoon(): boolean {
-    return this.currentlySnowing || this.snowPredicted
+    return this.currentlySnowing || this.snowPredicted;
   }
 
   public setSnowForecastedTime(time: Date) {

@@ -150,8 +150,10 @@ export default class SnowForecastService {
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
     return axios.get(geocodingApiUrl).then((response) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((response as any).cod === 401) {
-        throw new Error((response as any).message)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        throw new Error((response as any).message);
       } else if (response.data.length === 0) {
         throw new Error(`No location found for city (${city}) *** Did you include a country code? eg "New York, NY, US" ***`);
       }
@@ -210,7 +212,7 @@ export default class SnowForecastService {
   public async getSnowForecast(): Promise<SnowForecast> {
     // if another instance is already fetching, wait for it to finish
     for (let i = 0; i < 20 && this.fetchLock; i++) {
-      await new Promise(r => setTimeout(r, 10))
+      await new Promise(r => setTimeout(r, 10));
     }
     // if we are still locked, throw an error
     if (this.fetchLock) {

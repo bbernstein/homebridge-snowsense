@@ -17,21 +17,21 @@ const weather = {
 };
 
 const zipToLocationData = {
-  "zip": "02461",
-  "name": "Newton",
-  "lat": 42.3168,
-  "lon": -71.2084,
-  "country": "US",
+  zip: '02461',
+  name: 'Newton',
+  lat: 42.3168,
+  lon: -71.2084,
+  country: 'US',
 };
 
 const cityToLocationData = [
   {
-    "name": "Newton Highlands",
-    "lat": 42.3219158,
-    "lon": -71.2071228,
-    "country": "US",
-    "state": "Massachusetts"
-  }
+    name: 'Newton Highlands',
+    lat: 42.3219158,
+    lon: -71.2071228,
+    country: 'US',
+    state: 'Massachusetts',
+  },
 ];
 
 jest.mock('axios');
@@ -134,7 +134,7 @@ describe('SnowForecastService', () => {
   describe('Zip to lat,lon', () => {
     beforeEach(() => {
       axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({ data: zipToLocationData }));
+        .mockImplementationOnce(() => Promise.resolve({data: zipToLocationData}));
     });
 
     afterEach(() => {
@@ -145,7 +145,6 @@ describe('SnowForecastService', () => {
       const weather = new SnowForecastService(console,
         {apiKey: 'xxx', location: '02461', units: 'metric', apiThrottleMinutes: 10});
       await weather.setup();
-      console.log(`weather.latLon=${JSON.stringify(weather.latLon)}`);
       expect(weather.latLon).toStrictEqual({lat: 42.3168, lon: -71.2084});
       expect(weather.units).toBe('metric');
     });
@@ -155,7 +154,7 @@ describe('SnowForecastService', () => {
   describe('City to lat,lon', () => {
     beforeEach(() => {
       axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({ data: cityToLocationData }));
+        .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
     });
 
     afterEach(() => {
@@ -166,7 +165,6 @@ describe('SnowForecastService', () => {
       const weather = new SnowForecastService(console,
         {apiKey: 'xxx', location: 'Newton Highlands, MA, US', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
-      console.log(`weather.latLon=${JSON.stringify(weather.latLon)}`);
       expect(weather.latLon).toStrictEqual({lat: 42.3219158, lon: -71.2071228});
       expect(weather.units).toBe('standard');
     });
@@ -175,7 +173,7 @@ describe('SnowForecastService', () => {
   describe('Test bad api url', () => {
     beforeEach(() => {
       axios.get = jest.fn()
-        .mockImplementation(() => Promise.resolve({ data: {a: 1, b: 2} }));
+        .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
     });
 
     afterEach(() => {
@@ -191,13 +189,13 @@ describe('SnowForecastService', () => {
 
       try {
         await weatherProto.getWeatherFromApi();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         expect(e.message).toContain('URL not yet set for openweathermap');
       }
 
       weatherProto.weatherUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
-      const result = await weatherProto.getWeatherFromApi()
-      console.log(`result=${JSON.stringify(result)}`);
+      const result = await weatherProto.getWeatherFromApi();
       expect(result).toStrictEqual({a: 1, b: 2});
 
     });
