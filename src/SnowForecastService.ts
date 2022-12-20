@@ -50,12 +50,13 @@ export default class SnowForecastService {
   private readonly apiKey: string = '';
   private readonly location: string = '';
   private weatherUrl?: string;
-  private readonly units: string = '';
+  public readonly units: string = '';
   private weatherCache?: SnowForecast;
   private latestWeatherTime?: Date;
   private logger: Logger;
   private fetchLock: boolean;
   private readonly apiThrottleMillis;
+  public latLon?: { lat: number; lon: number };
 
   constructor(log: Logger, options: SnowForecastOptions) {
     this.logger = log;
@@ -74,12 +75,11 @@ export default class SnowForecastService {
    * Set up the instance of this class, includes an async conversion of the locationn
    */
   public async setup() {
-    const latlon: { lat: number; lon: number } = await this.convertLocationToLatLong(this.location);
+    this.latLon = await this.convertLocationToLatLong(this.location);
     this.weatherUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${
-      latlon.lat}&lon=${latlon.lon}&appid=${this.apiKey}&units=${
+      this.latLon.lat}&lon=${this.latLon.lon}&appid=${this.apiKey}&units=${
       this.units}&exclude=minutely,alerts,daily`;
   }
-
 
   /**
    * Return a sanitized version of the given string, which is either 'imperial' or 'metric'
@@ -109,11 +109,13 @@ export default class SnowForecastService {
 
     if (this.isZipCode(location)) {
       // If the location is a zip code, use the OpenWeatherMap API to convert it
-      return await this.getLocationFromZip(location);
+      const fullLocation = await this.getLocationFromZip(location);
+      return {lat: fullLocation.lat, lon: fullLocation.lon};
     }
 
     // Otherwise, assume the location is a city name
-    return await this.getLocationFromCity(location);
+    const fullLocation = await this.getLocationFromCity(location);
+    return {lat: fullLocation.lat, lon: fullLocation.lon};
   }
 
   /**
@@ -124,7 +126,7 @@ export default class SnowForecastService {
    * @private
    */
   private async getLocationFromZip(zip: string): Promise<{ lat: number; lon: number }> {
-    this.logger.debug(`zip=${zip}`);
+    this.logger.debug(`Converting zip code ${zip} to latitude-longitude pair`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
     const response = await axios.get(geocodingApiUrl);
@@ -144,6 +146,7 @@ export default class SnowForecastService {
    * @private
    */
   private async getLocationFromCity(city: string): Promise<{ lat: number; lon: number }> {
+    this.logger.debug(`converting city=[${city}]`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
     return axios.get(geocodingApiUrl).then((response) => {
@@ -198,17 +201,6 @@ export default class SnowForecastService {
   }
 
   /**
-   * Helper to sleep for a given number of milliseconds
-   * @param ms milliseconds to sleep
-   * @private
-   */
-  private async sleep(ms: number) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  /**
    * Get a full SnowForecast by reading a full weather forecast from OpenWeatherMap.
    *
    * @returns SnowForecast
@@ -216,9 +208,9 @@ export default class SnowForecastService {
   public async getSnowForecast(): Promise<SnowForecast> {
     // if another instance is already fetching, wait for it to finish
     for (let i = 0; i < 20 && this.fetchLock; i++) {
-      await this.sleep(100);
+      await new Promise(r => setTimeout(r, 10))
     }
-    // if we are still locked, throw a nerror
+    // if we are still locked, throw an error
     if (this.fetchLock) {
       throw new Error('Weather fetch is locked');
     }
