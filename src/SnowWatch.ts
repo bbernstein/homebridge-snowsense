@@ -141,14 +141,14 @@ export default class SnowWatch {
    * @returns true if it snowed recently
    */
   public snowedRecently(): boolean {
+    return this.hasSnowed;
+  }
+
+  public checkSnowedRecently() {
     const millisInPast = new Date().getTime() - (this.hoursSinceSnowStopped * 60 * 60 * 1000);
     const timeLastPredicted = this.lastTimeSnowForecasted ? new Date(this.lastTimeSnowForecasted) : '[NEVER]';
     this.logger.debug(`Last time snow forecasted: ${timeLastPredicted}`);
-    const result = (this.lastTimeSnowForecasted !== undefined) && (millisInPast <= this.lastTimeSnowForecasted);
-    if (!result) {
-      this.hasSnowed = false;
-    }
-    return result;
+    this.hasSnowed = (this.lastTimeSnowForecasted !== undefined) && (millisInPast <= this.lastTimeSnowForecasted);
   }
 
   /**
@@ -186,35 +186,34 @@ export default class SnowWatch {
     }
     const nowMillis = new Date().getTime();
     const millisInFuture = nowMillis + (this.hoursUntilSnowPredicted * 60 * 60 * 1000);
+
+    // is it snowing now?
     this.currentlySnowing = this.isSnowyEnough(forecast.current);
+
+    // is it snowing in the next x hours (where x = hoursUntilSnowPredicted)?
     const hoursWithSnowPredicted = forecast.hourly
       // Filter out any snow reports that are too far in the future or not snowing
       .filter((snowReport) => {
         return (snowReport.dt * 1000 < millisInFuture && this.isSnowyEnough(snowReport));
       });
     this.snowPredicted = hoursWithSnowPredicted.length > 0;
+
+    // just for debugging, if snow coming, output which hour that is
     if (this.snowPredicted) {
       const predictedTime = new Date(hoursWithSnowPredicted[0].dt * 1000);
       this.logger.debug(`Snow predicted at ${predictedTime} (current time is ${new Date()})`);
     }
-    this.snowPredicted = forecast.hourly
-      // Filter out any snow reports that are too far in the future or not snowing
-      .filter((snowReport) => {
-        return (snowReport.dt * 1000 < millisInFuture && this.isSnowyEnough(snowReport));
-      })
-      // if there were any snowy hours, then snow is predicted
-      .length > 0;
 
-    this.hasSnowed = this.hasSnowed || this.currentlySnowing;
-
-    this.logger.debug(`Snowing now: ${this.currentlySnowing
-    }, Snowing soon: ${this.snowPredicted
-    }, Snowed recently: ${this.hasSnowed}`);
-
+    // if it's snowing now or soon, reset the timer of when sonw was last forecasted
     if (this.currentlySnowing || this.snowPredicted) {
       this.setSnowForecastedTime(new Date());
-      return true;
     }
-    return false;
+
+    // update the "has snowed" flag
+    this.checkSnowedRecently();
+
+    this.logger.info(`Snowing now: ${this.currentlySnowing
+    }, Snowing soon: ${this.snowPredicted
+    }, Snowed recently: ${this.hasSnowed}`);
   }
 }

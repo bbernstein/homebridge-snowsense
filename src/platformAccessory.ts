@@ -29,7 +29,7 @@ export class IsSnowyAccessory {
 
   public setCharacteristic(service, value: boolean) {
     const newValue = value ? 1 : 0;
-    this.platform.log.debug(`Setting value of ${this.accessory.displayName} to: `, newValue);
+    this.platform.log.info(`Setting value of ${this.accessory.displayName} to: `, newValue);
     service.updateCharacteristic(this.platform.Characteristic.OccupancyDetected, newValue);
   }
 
