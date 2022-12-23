@@ -20,6 +20,26 @@
         "minLength": 32,
         "maxLength": 32
       },
+      "apiVersion": {
+        "title": "API Version",
+        "type": "string",
+        "required": true,
+        "default": "2.5",
+        "oneOf": [
+          {
+            "title": "2.5",
+            "enum": [
+              "2.5"
+            ]
+          },
+          {
+            "title": "3.0",
+            "enum": [
+              "3.0"
+            ]
+          }
+        ]
+      },
       "apiThrottleMinutes": {
         "title": "Minutes between weather checks",
         "type": "number",

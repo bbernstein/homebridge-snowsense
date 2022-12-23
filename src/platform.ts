@@ -12,6 +12,7 @@ import {
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {IsSnowyAccessory} from './platformAccessory';
 import SnowWatch from './SnowWatch';
+import {copyFileSync, readFileSync, writeFileSync} from 'fs';
 
 /**
  * HomebridgePlatform
@@ -24,18 +25,18 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
   private snowyAccessories: IsSnowyAccessory[] = [];
-
   private readonly forecastFrequencyMillis = 1000 * 60 * 5;
-
   private nextDelayTime = 1000;
-
-  // public readonly weatherReader: Weather;
 
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+
+    // if configs were from an old version, update and rewrite them
+    this.upgradeConfigs(config);
+
     this.nextDelayTime = 1000;
     this.log.debug('Finished initializing platform:', this.config.name);
     this.forecastFrequencyMillis = 1000 * 60 * (config.apiThrottleMinutes || 15);
@@ -51,10 +52,75 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     });
   }
 
+  private upgradeConfigs(config: PlatformConfig) {
+    let configChanged = false;
+    // read legacy configs, and see if anything changed
+    if (!config.apiKey && config.key) {
+      config.apiKey = config.key;
+      config.key = undefined;
+      configChanged = true;
+    }
+    if (!config.apiVersion) {
+      config.apiVersion = '2.5';
+      configChanged = true;
+    }
+    if (!config.location && config.latitude && config.longitude) {
+      config.location = `${config.latitude},${config.longitude}`;
+      config.latitude = undefined;
+      config.longitude = undefined;
+      configChanged = true;
+    }
+    if (config.units && !config.units.match(/^(imperial|metric)$/)) {
+      config.units = 'imperial';
+      configChanged = true;
+    }
+    if (!config.hoursBeforeSnowIsSnowy && config.beforeSnowStarts) {
+      config.hoursBeforeSnowIsSnowy = config.beforeSnowStarts;
+      config.beforeSnowStarts = undefined;
+      configChanged = true;
+    }
+    if (!config.hoursAfterSnowIsSnowy && config.afterSnowStops) {
+      config.hoursAfterSnowIsSnowy = config.afterSnowStops;
+      config.afterSnowStops = undefined;
+      configChanged = true;
+    }
+    if (!config.apiThrottleMinutes && config.forecastFrequency) {
+      config.apiThrottleMinutes = config.forecastFrequency;
+      config.forecastFrequency = undefined;
+      configChanged = true;
+    }
+    if (configChanged) {
+      this.log.info('Updating config to new format. ', config);
+      const configPath = this.api.user.configPath();
+      const allConfigs = JSON.parse(readFileSync(configPath, 'utf8'));
+
+      // find the platform entry matching this platform
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const platformIndex = allConfigs.platforms.findIndex((c: any) => c.platform === config.platform);
+      if (platformIndex >= 0) {
+        // if it was found, replace that entry with the updated config and write it
+        allConfigs.platforms[platformIndex] = config;
+        try {
+          copyFileSync(configPath, configPath + '.bak');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+          this.log.error(`Error backing up config file: ${e.message}`);
+        }
+        try {
+          writeFileSync(configPath, JSON.stringify(allConfigs, null, 4), 'utf8');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+          this.log.error(`Error writing updated config file: ${e.message}`);
+        }
+      }
+    }
+  }
+
   private async startWatchingWeather(config: PlatformConfig) {
     await SnowWatch.init(this.log,
       {
         apiKey: config.apiKey,
+        apiVersion: config.apiVersion,
         location: config.location,
         units: config.units,
         apiThrottleMinutes: config.apiThrottleMinutes || 15,

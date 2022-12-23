@@ -6,12 +6,14 @@ export type SnowWatchOptions = {
    * Get an api key from https://openweathermap.org/api
    */
   apiKey: string;
-
+  /**
+   * Latest version is 3.0, but allow using 2.5 for backwards compatibility
+   */
+  apiVersion: string;
   /**
    * Do not call the api more often than this number of minutes
    */
   apiThrottleMinutes?: number;
-
   /**
    * Units to request from weather api
    */
@@ -70,6 +72,7 @@ export default class SnowWatch {
     this.snowForecastService = new SnowForecastService(this.logger,
       {
         apiKey: options.apiKey,
+        apiVersion: options.apiVersion,
         location: options.location,
         units: options.units,
         apiThrottleMinutes: options.apiThrottleMinutes,

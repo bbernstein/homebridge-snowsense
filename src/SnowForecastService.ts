@@ -25,7 +25,10 @@ export type SnowForecastOptions = {
    * Get an api key from https://openweathermap.org/api
    */
   apiKey: string;
-
+  /**
+   * Latest version is 3.0, but allow using 2.5 for backwards compatibility
+   */
+  apiVersion: string;
   /**
    * Do not call the api more often than this number of minutes
    */
@@ -48,6 +51,7 @@ export type SnowForecastOptions = {
 
 export default class SnowForecastService {
   private readonly apiKey: string = '';
+  private readonly apiVersion: string = '2.5';
   private readonly location: string = '';
   private weatherUrl?: string;
   public readonly units: string = '';
@@ -63,6 +67,7 @@ export default class SnowForecastService {
     this.fetchLock = false;
 
     this.apiKey = options.apiKey;
+    this.apiVersion = options.apiVersion;
     this.location = options.location || 'New York,NY,US';
     this.units = this.sanitizeUnits(options.units || 'imperial');
 
@@ -76,7 +81,7 @@ export default class SnowForecastService {
    */
   public async setup() {
     this.latLon = await this.convertLocationToLatLong(this.location);
-    this.weatherUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${
+    this.weatherUrl = `https://api.openweathermap.org/data/${this.apiVersion}/onecall?lat=${
       this.latLon.lat}&lon=${this.latLon.lon}&appid=${this.apiKey}&units=${
       this.units}&exclude=minutely,alerts,daily`;
   }
@@ -255,8 +260,13 @@ export default class SnowForecastService {
     if (!this.weatherUrl) {
       throw new Error('URL not yet set for openweathermap');
     }
-    const response = await axios.get(this.weatherUrl);
-    return response.data;
+    try {
+      const response = await axios.get(this.weatherUrl);
+      return response.data;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      throw new Error(`Error getting weather from OpenWeatherMap: ${error.response.data.message}`);
+    }
   }
 
   /**
