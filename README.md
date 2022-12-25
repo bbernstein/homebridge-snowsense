@@ -37,6 +37,10 @@ Add the following information to your config file.
 
 **apiKey** [no default] is the *Secret Key* as assigned from [OpenWeather](https://openweathermap.org/api)
 
+***apiVersion*** [default=3.0] is the version of the API to use. If you ware new to this, then you'll want to use 3.0.
+
+***apiThrottleMinutes*** [default=15] is the number of minutes to wait between API calls. This is to prevent exceeding the API call limit.
+
 **location** field [no default] identifies the location for the snow checking. It can be a "city,state,country" (eg "Boston,MA,US"), or zip code (eg 02134), or "latitude,longitude" pair.
 
 **units** [default='imperial'] (values 'metric' or 'imperial') is the units defined in [OpenWeather Docs](https://openweathermap.org/api/one-call-api). Basically, 'imperial' is Fahrenheit and 'metric' is Celcius. 
@@ -45,21 +49,18 @@ Add the following information to your config file.
 
 **hoursAfterSnowIsSnowy** field [default=3] is number of **hours** after snow is last seen that the occupancy should go **off**.
 
-**coldPrecipitationThreshold** field [no default] is the temperature at which we should assume it's snowing if there is precipitation. In case there are places where the precipitation type may not work so we can just check see if there is precipitation and temperature below this number (in *units* set above). If this is not set, we will not use temperature.
-
-
 Here's what the config might look like inside the `platforms` section.
 
 ```
 {
     "platform": "SnowSense"
-    "name": "SnowSense",
+    "name": "Snow Sense",
     "apiKey": "**** get your key from OpenWeather ****",
+    "apiVersion": 3.0,
     "units": "imperial",
     "location": "Boston,ma,us",
     "hoursBeforeSnowIsSnowy": 3,
-    "hoursAfterSnowIsSnowy": 3,
-    "coldPrecipitationThreshold": 32
+    "hoursAfterSnowIsSnowy": 3
 }
 ```
 
@@ -93,3 +94,5 @@ This should work pretty well with any switches you can get working with [HomeKit
 
 * Thanks to @apollo316 on github for pointing out that the DarkSky api is going away and @nicoryan and others for recommending OpenWeather.
 * Thanks to @rmkjr for suggeting moving from a Switch to an Occupancy Sensor.
+* Thanks to @scoutbeer for detailed feedback and help testing v2.0.
+
