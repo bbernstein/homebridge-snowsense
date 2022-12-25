@@ -60,8 +60,8 @@ export default class SnowWatch {
   private readonly logger: Logger;
 
   constructor(log: Logger, options: SnowWatchOptions) {
-    this.hoursUntilSnowPredicted = options.hoursBeforeSnowIsSnowy || 3;
-    this.hoursSinceSnowStopped = options.hoursAfterSnowIsSnowy || 3;
+    this.hoursUntilSnowPredicted = options.hoursBeforeSnowIsSnowy !== undefined ? options.hoursBeforeSnowIsSnowy : 3;
+    this.hoursSinceSnowStopped = options.hoursAfterSnowIsSnowy !== undefined ? options.hoursAfterSnowIsSnowy : 3;
     this.coldPrecipitationThreshold = options.coldPrecipitationThreshold;
     this.apiKey = options.apiKey;
     this.currentlySnowing = false;
@@ -150,7 +150,12 @@ export default class SnowWatch {
   public checkSnowedRecently() {
     const millisInPast = new Date().getTime() - (this.hoursSinceSnowStopped * 60 * 60 * 1000);
     const timeLastPredicted = this.lastTimeSnowForecasted ? new Date(this.lastTimeSnowForecasted) : '[NEVER]';
-    this.logger.debug(`Last time snow forecasted: ${timeLastPredicted}`);
+    if (this.lastTimeSnowForecasted) {
+      const timeSinceLastPredicted = new Date().getTime() - this.lastTimeSnowForecasted;
+      const timeUntilTurnOff = (this.hoursSinceSnowStopped * 60 * 60 * 1000) - timeSinceLastPredicted;
+      this.logger.debug(`Last predicted: ${timeLastPredicted} (${timeSinceLastPredicted / 1000 / 60
+      } minutes ago), expires in ${timeUntilTurnOff / 1000 / 60} minutes`);
+    }
     this.hasSnowed = (this.lastTimeSnowForecasted !== undefined) && (millisInPast <= this.lastTimeSnowForecasted);
   }
 
@@ -204,7 +209,7 @@ export default class SnowWatch {
     // just for debugging, if snow coming, output which hour that is
     if (this.snowPredicted) {
       const predictedTime = new Date(hoursWithSnowPredicted[0].dt * 1000);
-      this.logger.debug(`Snow predicted at ${predictedTime} (current time is ${new Date()})`);
+      this.logger.debug(`Snow predicted in ${(predictedTime.getTime() - new Date().getTime()) / 1000 / 60} minutes`);
     }
 
     // if it's snowing now or soon, reset the timer of when sonw was last forecasted

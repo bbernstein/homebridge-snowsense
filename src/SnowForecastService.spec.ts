@@ -61,7 +61,7 @@ describe('SnowForecastService', () => {
 
     it('should turn weather forecast into Snow forecast', async () => {
       const snowForecastService = new SnowForecastService(console,
-        {apiKey: 'xxx', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
+        {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
       const forecast = await snowForecastService.getSnowForecast();
@@ -76,7 +76,7 @@ describe('SnowForecastService', () => {
 
     it('should use cached weather on second try', async () => {
       const snowForecastService = new SnowForecastService(console,
-        {apiKey: 'xxx', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
+        {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
       // first call
@@ -112,7 +112,7 @@ describe('SnowForecastService', () => {
     // This test breaks when fakeTimers are used as that breaks the sleep function
     it('should block a simultaneous call to get weather', async () => {
       const snowForecastService = new SnowForecastService(console,
-        {apiKey: 'xxx', location: '0,0', units: 'imperial', apiThrottleMinutes: 10});
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
 
@@ -143,7 +143,7 @@ describe('SnowForecastService', () => {
 
     it('should set lat,lon to values from zip api', async () => {
       const weather = new SnowForecastService(console,
-        {apiKey: 'xxx', location: '02461', units: 'metric', apiThrottleMinutes: 10});
+        {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
       await weather.setup();
       expect(weather.latLon).toStrictEqual({lat: 42.3168, lon: -71.2084});
       expect(weather.units).toBe('metric');
@@ -163,7 +163,7 @@ describe('SnowForecastService', () => {
 
     it('should set lat,lon to values from city api', async () => {
       const weather = new SnowForecastService(console,
-        {apiKey: 'xxx', location: 'Newton Highlands, MA, US', units: 'standard', apiThrottleMinutes: 10});
+        {apiKey: 'xxx', apiVersion: '3.0', location: 'Newton Highlands, MA, US', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
       expect(weather.latLon).toStrictEqual({lat: 42.3219158, lon: -71.2071228});
       expect(weather.units).toBe('standard');
@@ -182,7 +182,7 @@ describe('SnowForecastService', () => {
 
     it('should fail when no url', async () => {
       const weather = new SnowForecastService(console,
-        {apiKey: 'xxx', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
 
       const weatherProto = Object.getPrototypeOf(weather);

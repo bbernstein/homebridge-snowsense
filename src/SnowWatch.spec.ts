@@ -41,6 +41,7 @@ describe('SnowWatch', () => {
         SnowWatch.init(console,
           {
             apiKey: 'xxx',
+            apiVersion: '2.5',
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 2,
@@ -63,6 +64,7 @@ describe('SnowWatch', () => {
         SnowWatch.init(console,
           {
             apiKey: 'xxx',
+            apiVersion: '2.5',
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 3,
@@ -106,6 +108,7 @@ describe('SnowWatch', () => {
         SnowWatch.init(console,
           {
             apiKey: 'xxx',
+            apiVersion: '2.5',
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 2,
@@ -129,6 +132,7 @@ describe('SnowWatch', () => {
         SnowWatch.init(console,
           {
             apiKey: 'xxx',
+            apiVersion: '2.5',
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 3,
@@ -177,6 +181,7 @@ describe('SnowWatch', () => {
         SnowWatch.init(console,
           {
             apiKey: 'xxx',
+            apiVersion: '2.5',
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 3,
@@ -207,9 +212,7 @@ describe('SnowWatch', () => {
   describe('when its three hours after last snow', () => {
     const laterSecs = nowSecs + 60 * 60 * 3;
     const hourSecs = 60 * 60;
-
     beforeEach(() => {
-
       forecast1 = {
         'current': {'dt': nowSecs, 'temp': 35.24, 'hasSnow': true, 'hasPrecip': true},
         'hourly': [
@@ -219,7 +222,6 @@ describe('SnowWatch', () => {
           {'dt': nowSecs + hourSecs * 4, 'temp': 30.61, 'hasSnow': false, 'hasPrecip': false},
         ],
       };
-
       forecast2 = {
         'current': {'dt': laterSecs, 'temp': 35.24, 'hasSnow': false, 'hasPrecip': false},
         'hourly': [
@@ -240,10 +242,81 @@ describe('SnowWatch', () => {
       SnowWatch.init(console,
         {
           apiKey: 'xxx',
+          apiVersion: '2.5',
           location: '0,0',
           units: 'imperial',
           hoursAfterSnowIsSnowy: 3,
           hoursBeforeSnowIsSnowy: 3,
+        });
+    });
+
+    it('should see it did not snow recently', async () => {
+      const watcher = SnowWatch.getInstance();
+
+      // now
+      jest.useFakeTimers().setSystemTime(new Date(nowSecs * 1000));
+      await watcher.updatePredictionStatus();
+
+      expect(watcher.snowingNow()).toBe(true);
+      expect(watcher.snowingSoon()).toBe(true);
+      expect(watcher.snowedRecently()).toBe(true);
+
+      // not quite 3 hours later
+      jest.useFakeTimers().setSystemTime(new Date((laterSecs - 100) * 1000));
+      await watcher.updatePredictionStatus();
+
+      expect(watcher.snowingNow()).toBe(false);
+      expect(watcher.snowingSoon()).toBe(false);
+      expect(watcher.snowedRecently()).toBe(true);
+
+      // over 3 hours later
+      jest.useFakeTimers().setSystemTime(new Date((laterSecs + 1) * 1000));
+      await watcher.updatePredictionStatus();
+
+      expect(watcher.snowingNow()).toBe(false);
+      expect(watcher.snowingSoon()).toBe(false);
+      expect(watcher.snowedRecently()).toBe(false);
+    });
+  });
+
+  describe('Zero hours before and after (only on when currently snowing) ', () => {
+    const laterSecs = nowSecs + 10;
+    const hourSecs = 60 * 60;
+    beforeEach(() => {
+      forecast1 = {
+        'current': {'dt': nowSecs, 'temp': 35.24, 'hasSnow': true, 'hasPrecip': true},
+        'hourly': [
+          {'dt': nowSecs + hourSecs, 'temp': 35.24, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': nowSecs + hourSecs * 2, 'temp': 35.87, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': nowSecs + hourSecs * 3, 'temp': 35.33, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': nowSecs + hourSecs * 4, 'temp': 30.61, 'hasSnow': false, 'hasPrecip': false},
+        ],
+      };
+      forecast2 = {
+        'current': {'dt': laterSecs, 'temp': 35.24, 'hasSnow': false, 'hasPrecip': false},
+        'hourly': [
+          {'dt': laterSecs + hourSecs, 'temp': 35.24, 'hasSnow': true, 'hasPrecip': false},
+          {'dt': laterSecs + hourSecs * 2, 'temp': 35.87, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': laterSecs + hourSecs * 3, 'temp': 35.33, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': laterSecs + hourSecs * 4, 'temp': 30.61, 'hasSnow': false, 'hasPrecip': false},
+        ],
+      };
+
+      // use the above forecast mock
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .mockResolvedValueOnce(forecast1)
+        .mockResolvedValueOnce(forecast2)
+        .mockResolvedValueOnce(forecast2);
+
+      SnowWatch.init(console,
+        {
+          apiKey: 'xxx',
+          apiVersion: '2.5',
+          location: '0,0',
+          units: 'imperial',
+          hoursAfterSnowIsSnowy: 0,
+          hoursBeforeSnowIsSnowy: 0,
         });
     });
 
@@ -257,22 +330,13 @@ describe('SnowWatch', () => {
       expect(watcher.snowingSoon()).toBe(true);
       expect(watcher.snowedRecently()).toBe(true);
 
-      jest.useFakeTimers().setSystemTime(new Date((laterSecs - 100) * 1000));
-      await watcher.updatePredictionStatus();
-
-      expect(watcher.snowingNow()).toBe(false);
-      expect(watcher.snowingSoon()).toBe(false);
-      expect(watcher.snowedRecently()).toBe(true);
-
-      jest.useFakeTimers().setSystemTime(new Date((laterSecs + 1) * 1000));
+      jest.useFakeTimers().setSystemTime(new Date(laterSecs * 1000));
       await watcher.updatePredictionStatus();
 
       expect(watcher.snowingNow()).toBe(false);
       expect(watcher.snowingSoon()).toBe(false);
       expect(watcher.snowedRecently()).toBe(false);
     });
-
-
   });
 
 
