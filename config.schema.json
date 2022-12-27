@@ -1,0 +1,103 @@
+{
+  "pluginAlias": "SnowSense",
+  "pluginType": "platform",
+  "singular": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "required": true,
+        "default": "SnowSense"
+      },
+      "apiKey": {
+        "title": "API Key (apiKey)",
+        "type": "string",
+        "required": true,
+        "default": "",
+        "description": "API key from openweathermap.org",
+        "minLength": 32,
+        "maxLength": 32
+      },
+      "apiVersion": {
+        "title": "API Version (apiVersion)",
+        "type": "string",
+        "required": true,
+        "default": "2.5",
+        "oneOf": [
+          {
+            "title": "2.5",
+            "enum": [
+              "2.5"
+            ]
+          },
+          {
+            "title": "3.0",
+            "enum": [
+              "3.0"
+            ]
+          }
+        ]
+      },
+      "debugOn": {
+        "title": "Debug Logging (debugOn)",
+        "type": "boolean",
+        "required": true,
+        "default": false
+      },
+      "apiThrottleMinutes": {
+        "title": "Minutes between weather checks (apiThrottleMinutes)",
+        "type": "number",
+        "placeholder": "15",
+        "description": "How often to check for weather. Don't do it too often or you'll use up your api usage quota.",
+        "minimum": 5,
+        "maximum": 1440
+      },
+      "units": {
+        "title": "Temperature Units (units)",
+        "type": "string",
+        "required": true,
+        "default": "imperial",
+        "description": "Fahrenheit or Celsius",
+        "oneOf": [
+          {
+            "title": "Fahrenheit (imperial)",
+            "enum": [
+              "imperial"
+            ]
+          },
+          {
+            "title": "Celsius (metric)",
+            "enum": [
+              "metric"
+            ]
+          }
+        ]
+      },
+      "location": {
+        "title": "Location",
+        "type": "string",
+        "required": true,
+        "default": "New York,NY,US",
+        "description": "Location is &lt;city>,&lt;state>,&lt;country code> or 5-digit zip code or &lt;latitude>,&lt;longitude>"
+      },
+      "hoursBeforeSnowIsSnowy": {
+        "title": "Hours before snow starts to trigger 'snowy' (hoursBeforeSnowIsSnowy)",
+        "type": "integer",
+        "default": "3",
+        "minimum": 0,
+        "maximum": 6,
+        "description": "If snow is forecasted within the next x hours, it's considered snowy."
+      },
+      "hoursAfterSnowIsSnowy": {
+        "title": "Hours after snow ends to turn off 'snowy' (hoursAfterSnowIsSnowy)",
+        "type": "integer",
+        "default": "3",
+        "minimum": 0,
+        "maximum": 6,
+        "description": "If snow was seen in the past x hours, it's considered snowy."
+      }
+    }
+  }
+}
