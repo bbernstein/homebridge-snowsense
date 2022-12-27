@@ -26,7 +26,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   public readonly accessories: PlatformAccessory[] = [];
   private snowyAccessories: IsSnowyAccessory[] = [];
   private readonly forecastFrequencyMillis = 1000 * 60 * 5;
-  private nextDelayTime = 1000;
+  private readonly debugOn = false;
 
   constructor(
     public readonly log: Logger,
@@ -37,8 +37,8 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     // if configs were from an old version, update and rewrite them
     this.upgradeConfigs(config);
 
-    this.nextDelayTime = 1000;
-    this.log.debug('Finished initializing platform:', this.config.name);
+    this.debugOn = this.config.debugOn;
+    this.debug('Finished initializing platform:', this.config.name);
     this.forecastFrequencyMillis = 1000 * 60 * (config.apiThrottleMinutes || 15);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
@@ -46,7 +46,6 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
-      log.debug('Executed didFinishLaunching callback');
       this.discoverDevices();
       this.startWatchingWeather(config).then();
     });
@@ -121,6 +120,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       {
         apiKey: config.apiKey,
         apiVersion: config.apiVersion,
+        debugOn: config.debugOn,
         location: config.location,
         units: config.units,
         apiThrottleMinutes: config.apiThrottleMinutes || 15,
@@ -171,11 +171,18 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private debug(message: string, ...parameters: any[]): void {
+    if (this.debugOn) {
+      this.log.debug(message, ...parameters);
+    }
+  }
+
   private async watchWeather() {
     await SnowSensePlatform.updateAccessories(this);
-    this.log.debug(`Updating weather (first time). frequency: ${this.forecastFrequencyMillis}`);
+    this.debug(`Updating weather (first time). frequency: ${this.forecastFrequencyMillis}`);
     await setInterval(async () => {
-      this.log.debug(`Updating weather (repeating). frequency: ${this.forecastFrequencyMillis}`);
+      this.debug(`Updating weather (repeating). frequency: ${this.forecastFrequencyMillis}`);
       await SnowSensePlatform.updateAccessories(this);
     }, this.forecastFrequencyMillis);
   }
@@ -245,7 +252,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         // this is imported from `platformAccessory.ts`
         this.snowyAccessories.push(new IsSnowyAccessory(this, existingAccessory));
 
-        this.log.debug('Created new SnowyAccessory object:', existingAccessory.displayName);
+        this.debug('Created new SnowyAccessory object:', existingAccessory.displayName);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
         // remove platform accessories when no longer present

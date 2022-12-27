@@ -3,7 +3,7 @@ An Occupancy Sensor that indicates snowy conditions using local weather forecast
 
 This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple Occupancy Sensor that automatically detects occupancy ON when it's going to snow soon and OFF a while after it stops snowing. Think of **snow** being the **occupant** and you have ample warning of when the (un)welcome guest arrives.
 
-This is based on my earlier project, [homebridge-snowswitch](https://github.com/bbernstein/homebridge-snowswitch) that was similar but acted as a switch rather than a sensor.
+This is based on my earlier project, [homebridge-snowswitch](https://github.com/bbernstein/homebridge-snowswitch) that was similar but acted as a switch rather than a sensor. That former project is no longer supported and does not work.
 
 
 ## New in v2.x
@@ -17,7 +17,7 @@ For any installation, you'll first need to get an *API Key* from [OpenWeather AP
 
 ### Homebridge UI
 
-Go to 'Plugins' page, search for `homebridge-snoseense` and click 'install'.
+Go to 'Plugins' page, search for `homebridge-snowsense` and click 'install'.
 
 ### Manually
 
@@ -37,9 +37,11 @@ Add the following information to your config file.
 
 **apiKey** [no default] is the *Secret Key* as assigned from [OpenWeather](https://openweathermap.org/api)
 
-***apiVersion*** [default=3.0] is the version of the API to use. If you ware new to this, then you'll want to use 3.0.
+**apiVersion** [default=3.0] is the version of the API to use. If you ware new to this, then you'll want to use 3.0.
 
-***apiThrottleMinutes*** [default=15] is the number of minutes to wait between API calls. This is to prevent exceeding the API call limit.
+**apiThrottleMinutes** [default=15] is the number of minutes to wait between API calls. This is to prevent exceeding the API call limit.
+
+**debug** [default=false] is a flag to enable debug logging.
 
 **location** field [no default] identifies the location for the snow checking. It can be a "city,state,country" (eg "Boston,MA,US"), or zip code (eg 02134), or "latitude,longitude" pair.
 
@@ -57,6 +59,8 @@ Here's what the config might look like inside the `platforms` section.
     "name": "Snow Sense",
     "apiKey": "**** get your key from OpenWeather ****",
     "apiVersion": 3.0,
+    "apiThrottleMinutes": 15,
+    "debug": false,
     "units": "imperial",
     "location": "Boston,ma,us",
     "hoursBeforeSnowIsSnowy": 3,

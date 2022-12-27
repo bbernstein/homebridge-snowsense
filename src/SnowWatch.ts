@@ -15,6 +15,10 @@ export type SnowWatchOptions = {
    */
   apiThrottleMinutes?: number;
   /**
+   * Show debug logging
+   */
+  debugOn?: boolean;
+  /**
    * Units to request from weather api
    */
   units?: 'imperial' | 'metric' | 'standard';
@@ -47,6 +51,7 @@ export type SnowWatchOptions = {
 export default class SnowWatch {
   private static instance: SnowWatch;
   private apiKey?: string;
+  private readonly debugOn: boolean;
   private readonly coldPrecipitationThreshold?: number;
   private readonly hoursUntilSnowPredicted: number;
   private readonly hoursSinceSnowStopped: number;
@@ -64,6 +69,7 @@ export default class SnowWatch {
     this.hoursSinceSnowStopped = options.hoursAfterSnowIsSnowy !== undefined ? options.hoursAfterSnowIsSnowy : 3;
     this.coldPrecipitationThreshold = options.coldPrecipitationThreshold;
     this.apiKey = options.apiKey;
+    this.debugOn = !!options.debugOn;
     this.currentlySnowing = false;
     this.snowPredicted = false;
     this.hasSnowed = false;
@@ -73,10 +79,18 @@ export default class SnowWatch {
       {
         apiKey: options.apiKey,
         apiVersion: options.apiVersion,
+        debugOn : options.debugOn,
         location: options.location,
         units: options.units,
         apiThrottleMinutes: options.apiThrottleMinutes,
       });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private debug(message: string, ...parameters: any[]): void {
+    if (this.debugOn) {
+      this.logger.debug(message, ...parameters);
+    }
   }
 
   /**
@@ -153,7 +167,7 @@ export default class SnowWatch {
     if (this.lastTimeSnowForecasted) {
       const timeSinceLastPredicted = new Date().getTime() - this.lastTimeSnowForecasted;
       const timeUntilTurnOff = (this.hoursSinceSnowStopped * 60 * 60 * 1000) - timeSinceLastPredicted;
-      this.logger.debug(`Last predicted: ${timeLastPredicted} (${timeSinceLastPredicted / 1000 / 60
+      this.debug(`Last predicted: ${timeLastPredicted} (${timeSinceLastPredicted / 1000 / 60
       } minutes ago), expires in ${timeUntilTurnOff / 1000 / 60} minutes`);
     }
     this.hasSnowed = (this.lastTimeSnowForecasted !== undefined) && (millisInPast <= this.lastTimeSnowForecasted);
@@ -209,7 +223,7 @@ export default class SnowWatch {
     // just for debugging, if snow coming, output which hour that is
     if (this.snowPredicted) {
       const predictedTime = new Date(hoursWithSnowPredicted[0].dt * 1000);
-      this.logger.debug(`Snow predicted in ${(predictedTime.getTime() - new Date().getTime()) / 1000 / 60} minutes`);
+      this.debug(`Snow predicted in ${(predictedTime.getTime() - new Date().getTime()) / 1000 / 60} minutes`);
     }
 
     // if it's snowing now or soon, reset the timer of when sonw was last forecasted

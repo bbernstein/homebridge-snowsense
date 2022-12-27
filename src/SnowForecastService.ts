@@ -30,6 +30,10 @@ export type SnowForecastOptions = {
    */
   apiVersion: string;
   /**
+   * Show debug logging
+   */
+  debugOn?: boolean;
+  /**
    * Do not call the api more often than this number of minutes
    */
   apiThrottleMinutes?: number;
@@ -52,6 +56,7 @@ export type SnowForecastOptions = {
 export default class SnowForecastService {
   private readonly apiKey: string = '';
   private readonly apiVersion: string = '2.5';
+  private readonly debugOn: boolean;
   private readonly location: string = '';
   private weatherUrl?: string;
   public readonly units: string = '';
@@ -68,12 +73,20 @@ export default class SnowForecastService {
 
     this.apiKey = options.apiKey;
     this.apiVersion = options.apiVersion;
+    this.debugOn = !!options.debugOn;
     this.location = options.location || 'New York,NY,US';
     this.units = this.sanitizeUnits(options.units || 'imperial');
 
     // no more frequently than every 5 minutes, default to 15 minutes
     const throttleMinutes = options.apiThrottleMinutes || 15;
     this.apiThrottleMillis = Math.max(throttleMinutes, 5) * 60 * 1000;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private debug(message: string, ...parameters: any[]): void {
+    if (this.debugOn) {
+      this.logger.debug(message, ...parameters);
+    }
   }
 
   /**
@@ -131,14 +144,14 @@ export default class SnowForecastService {
    * @private
    */
   private async getLocationFromZip(zip: string): Promise<{ lat: number; lon: number }> {
-    this.logger.debug(`Converting zip code ${zip} to latitude-longitude pair`);
+    this.debug(`Converting zip code ${zip} to latitude-longitude pair`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
     const response = await axios.get(geocodingApiUrl);
     if (!response || !response.data || response.data.cod) {
       throw new Error(`No location found for zip code (${zip})`);
     }
-    this.logger.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
+    this.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
     return response.data;
   }
 
@@ -151,7 +164,7 @@ export default class SnowForecastService {
    * @private
    */
   private async getLocationFromCity(city: string): Promise<{ lat: number; lon: number }> {
-    this.logger.debug(`converting city=[${city}]`);
+    this.debug(`converting city=[${city}]`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
     return axios.get(geocodingApiUrl).then((response) => {
@@ -162,7 +175,7 @@ export default class SnowForecastService {
       } else if (response.data.length === 0) {
         throw new Error(`No location found for city (${city}) *** Did you include a country code? eg "New York, NY, US" ***`);
       }
-      this.logger.debug(`converting city=[${city}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
+      this.debug(`converting city=[${city}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
       return response.data[0];
     });
   }
@@ -229,15 +242,15 @@ export default class SnowForecastService {
       if (this.weatherCache &&
         this.latestWeatherTime &&
         (now.getTime() - this.latestWeatherTime.getTime()) < this.apiThrottleMillis) {
-        this.logger.debug('Using cached weather');
+        this.debug('Using cached weather');
       } else {
-        this.logger.debug('Fetching new weather');
+        this.debug('Fetching new weather');
         const forecast = await this.getWeatherFromApi();
         this.weatherCache = this.adjustForOpenWeatherMap(forecast);
 
         // make one-liner output for debugging
         const hours = this.weatherCache.hourly.slice(0, 4).map(h => h.hasSnow).join(',');
-        this.logger.debug(`Now and next 3 hours: ${hours}`);
+        this.debug(`Now and next 3 hours: ${hours}`);
 
         this.latestWeatherTime = now;
       }

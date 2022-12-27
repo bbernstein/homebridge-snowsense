@@ -40,6 +40,12 @@
           }
         ]
       },
+      "debugOn": {
+        "title": "Debug Logging (debugOn)",
+        "type": "boolean",
+        "required": true,
+        "default": false
+      },
       "apiThrottleMinutes": {
         "title": "Minutes between weather checks (apiThrottleMinutes)",
         "type": "number",

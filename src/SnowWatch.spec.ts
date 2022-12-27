@@ -42,6 +42,7 @@ describe('SnowWatch', () => {
           {
             apiKey: 'xxx',
             apiVersion: '2.5',
+            debugOn: false,
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 2,
@@ -64,6 +65,7 @@ describe('SnowWatch', () => {
         SnowWatch.init(console,
           {
             apiKey: 'xxx',
+            debugOn: false,
             apiVersion: '2.5',
             location: '0,0',
             units: 'imperial',
@@ -109,6 +111,7 @@ describe('SnowWatch', () => {
           {
             apiKey: 'xxx',
             apiVersion: '2.5',
+            debugOn: false,
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 2,
@@ -133,6 +136,7 @@ describe('SnowWatch', () => {
           {
             apiKey: 'xxx',
             apiVersion: '2.5',
+            debugOn: false,
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 3,
@@ -182,6 +186,7 @@ describe('SnowWatch', () => {
           {
             apiKey: 'xxx',
             apiVersion: '2.5',
+            debugOn: false,
             location: '0,0',
             units: 'imperial',
             hoursAfterSnowIsSnowy: 3,
@@ -243,6 +248,7 @@ describe('SnowWatch', () => {
         {
           apiKey: 'xxx',
           apiVersion: '2.5',
+          debugOn: false,
           location: '0,0',
           units: 'imperial',
           hoursAfterSnowIsSnowy: 3,
