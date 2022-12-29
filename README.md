@@ -80,7 +80,7 @@ I bought a set of [Etekcity](https://www.amazon.com/gp/product/B074GVPYPY) outle
 
 To make them work with [HomeKit](https://www.apple.com/ios/home/), I needed to get [homebridge](https://www.npmjs.com/package/homebridge) working. I had an old [Raspberry Pi](https://www.raspberrypi.org/) sitting around so I [installed it there](https://github.com/nfarina/homebridge/wiki/Running-HomeBridge-on-a-Raspberry-Pi) and put the device in a closet with the rest of my network gear. 
 
-This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [DarkSky](https://darksky.net/dev) API key, then the HomeKit App end of this is pretty trivial. 
+This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [OpenWeather](https://openweathermap.org/api) API key, then the HomeKit App end of this is pretty trivial. 
 
 ## How to set up the automation
 

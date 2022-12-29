@@ -135,7 +135,6 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     const watcher = SnowWatch.getInstance();
     try {
       await watcher.updatePredictionStatus();
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       that.log.error(`Error getting updated weather: ${e.message}`);
