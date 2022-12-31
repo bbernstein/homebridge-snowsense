@@ -2,6 +2,7 @@
   "pluginAlias": "SnowSense",
   "pluginType": "platform",
   "singular": true,
+  "headerDisplay": "SnowSense creates an Occupancy Detector called \"IsSnowy\" that tells you to turn on your snow melting equipment. That means it's going to snow soon or is snowing now or it stopped snowing recently",
   "schema": {
     "type": "object",
     "properties": {
@@ -12,11 +13,11 @@
         "default": "SnowSense"
       },
       "apiKey": {
-        "title": "API Key (apiKey)",
+        "title": "OpenWeather API Key (apiKey)",
         "type": "string",
         "required": true,
         "default": "",
-        "description": "API key from openweathermap.org",
+        "description": "API key from https://openweathermap.org/api (Subscribe to One Call API 3.0)",
         "minLength": 32,
         "maxLength": 32
       },
@@ -24,7 +25,7 @@
         "title": "API Version (apiVersion)",
         "type": "string",
         "required": true,
-        "default": "2.5",
+        "default": "3.0",
         "oneOf": [
           {
             "title": "2.5",
@@ -99,5 +100,32 @@
         "description": "If snow was seen in the past x hours, it's considered snowy."
       }
     }
-  }
+  },
+  "layout": [
+    {
+      "type": "fieldset",
+      "title": "Required Settings",
+      "description": "There are needed to use SnowSense",
+      "items": [
+        "location",
+        "apiKey"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced Settings",
+      "description": "These settings are optional but good for tweaking.",
+      "expandable": true,
+      "items": [
+        "hoursBeforeSnowIsSnowy",
+        "hoursAfterSnowIsSnowy",
+        "units",
+        "apiVersion",
+        "apiThrottleMinutes",
+        "name",
+        "debugOn"
+      ]
+
+    }
+  ]
 }
