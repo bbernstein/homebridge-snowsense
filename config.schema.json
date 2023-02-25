@@ -105,12 +105,12 @@
         "default": false,
         "description": "Only trigger when it's cold, even if it's snowing. This is useful since snow might not be sticking to the ground if it's too warm."
       },
-      "coldThreshold": {
-        "title": "Cold Threshold (coldThreshold)",
+      "coldTemperatureThreshold": {
+        "title": "Cold Threshold (coldTemperatureThreshold)",
         "type": "number",
         "default": 32,
-        "minimum": 0,
-        "maximum": 100,
+        "minimum": -20,
+        "maximum": 50,
         "description": "Only relevant when \"Only When Cold\" is turned on. Trigger when it's colder than this temperature. In the given units."
       }
     }
@@ -144,7 +144,7 @@
       "items": [
         "units",
         "onlyWhenCold",
-        "coldThreshold"
+        "coldTemperatureThreshold"
       ]
     },
     {
