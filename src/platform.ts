@@ -12,7 +12,7 @@ import {
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {IsSnowyAccessory} from './platformAccessory';
 import SnowWatch from './SnowWatch';
-import {copyFileSync, readFileSync, writeFileSync} from 'fs';
+import {readFileSync, writeFileSync} from 'fs';
 
 /**
  * HomebridgePlatform
@@ -57,10 +57,12 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     if (!config.apiKey && config.key) {
       config.apiKey = config.key;
       config.key = undefined;
+      // if we had an old key, it was version v2.5, so let that keep working
+      config.apiVersion = '2.5';
       configChanged = true;
     }
     if (!config.apiVersion) {
-      config.apiVersion = '2.5';
+      config.apiVersion = '3.0';
       configChanged = true;
     }
     if (!config.location && config.latitude && config.longitude) {
@@ -91,26 +93,19 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     if (configChanged) {
       this.log.info('Updating config to new format. ', config);
       const configPath = this.api.user.configPath();
-      const allConfigs = JSON.parse(readFileSync(configPath, 'utf8'));
-
-      // find the platform entry matching this platform
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const platformIndex = allConfigs.platforms.findIndex((c: any) => c.platform === config.platform);
-      if (platformIndex >= 0) {
-        // if it was found, replace that entry with the updated config and write it
-        allConfigs.platforms[platformIndex] = config;
-        try {
-          copyFileSync(configPath, configPath + '.bak');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-          this.log.error(`Error backing up config file: ${e.message}`);
-        }
-        try {
+      try {
+        const allConfigs = JSON.parse(readFileSync(configPath, 'utf8'));
+        // find the platform entry matching this platform
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const platformIndex = allConfigs.platforms.findIndex((c: any) => c.platform === config.platform);
+        if (platformIndex >= 0) {
+          // if it was found, replace that entry with the updated config and write it
+          allConfigs.platforms[platformIndex] = config;
           writeFileSync(configPath, JSON.stringify(allConfigs, null, 4), 'utf8');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-          this.log.error(`Error writing updated config file: ${e.message}`);
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        this.log.error(`Error updating config file: ${e}`);
       }
     }
   }

@@ -1,4 +1,9 @@
 # homebridge-snowsense
+[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+[![GitHub last commit](https://img.shields.io/github/last-commit/bbernstein/homebridge-snowsense.svg)](https://github.com/bbernstein/homebridge-snowsense)
+[![npm](https://img.shields.io/npm/v/homebridge-snowsense?label=npm%20package)](https://github.com/bbernstein/homebridge-snowsense)
+[![npm](https://img.shields.io/npm/dt/homebridge-snowsense.svg)](https://www.npmjs.com/package/homebridge-snowsense)
+
 An Occupancy Sensor that indicates snowy conditions using local weather forecast
 
 This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple Occupancy Sensor that automatically detects occupancy ON when it's going to snow soon and OFF a while after it stops snowing. Think of **snow** being the **occupant** and you have ample warning of when the (un)welcome guest arrives.
@@ -93,6 +98,33 @@ This should work pretty well with any switches you can get working with [HomeKit
 - Select the **Snow Mats On** scene
 - Repeat for turning **Off** when the controller **Turns Off**
 
+## Development notes
+
+The latest version of this plugin was build following information from [Homebridge Plugin Development](https://developers.homebridge.io/#/) 
+and the example 
+[Homebridge Platform Plugin Template](https://github.com/homebridge/homebridge-plugin-template)
+and several other plugins around github.
+
+### Reminders to the developer
+(since I usually only look once a year and forget these things)
+
+How to release a new [beta version](https://github.com/homebridge/homebridge-plugin-template#publishing-beta-versions):
+
+How to increment beta version:
+
+```agsl
+npm version prerelease
+npm publish --tag beta
+```
+
+How to [release a new version](https://github.com/homebridge/homebridge-plugin-template#versioning-your-plugin).
+
+eg (when updating patch version):
+
+```agsl
+npm version patch
+npm publish
+```
 
 ## Thanks
 
