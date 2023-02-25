@@ -113,6 +113,7 @@ How to release a new [beta version](https://github.com/homebridge/homebridge-plu
 How to increment beta version:
 
 ```agsl
+npm run prepublishOnly
 npm version prerelease
 npm publish --tag beta
 ```
@@ -122,6 +123,7 @@ How to [release a new version](https://github.com/homebridge/homebridge-plugin-t
 eg (when updating patch version):
 
 ```agsl
+npm run prepublishOnly
 npm version patch
 npm publish
 ```
