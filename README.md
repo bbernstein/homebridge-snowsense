@@ -105,6 +105,26 @@ and the example
 [Homebridge Platform Plugin Template](https://github.com/homebridge/homebridge-plugin-template)
 and several other plugins around github.
 
+### Reminders to the developer
+(since I usually only look once a year and forget these things)
+
+How to release a new [beta version](https://github.com/homebridge/homebridge-plugin-template#publishing-beta-versions):
+
+How to increment beta version:
+
+```agsl
+npm version prerelease
+npm publish --tag beta
+```
+
+How to [release a new version](https://github.com/homebridge/homebridge-plugin-template#versioning-your-plugin).
+
+eg (when updating patch version):
+
+```agsl
+npm version patch
+npm publish
+```
 
 ## Thanks
 
