@@ -12,8 +12,8 @@ import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {IsSnowyAccessory} from './platformAccessory';
 import SnowWatch from './SnowWatch';
 import {readFileSync, writeFileSync} from 'fs';
-import {SnowSenseConfig} from "./SnowSenseConfig";
-import {PlatformConfig} from "homebridge/lib/bridgeService";
+import {SnowSenseConfig} from './SnowSenseConfig';
+import {PlatformConfig} from 'homebridge/lib/bridgeService';
 
 /**
  * HomebridgePlatform
@@ -126,7 +126,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         hoursAfterSnowIsSnowy: config.hoursAfterSnowIsSnowy,
         coldPrecipitationThreshold: config.coldPrecipitationThreshold,
         onlyWhenCold: config.onlyWhenCold,
-        coldTemperatureThreshold: config.coldTemperatureThreshold
+        coldTemperatureThreshold: config.coldTemperatureThreshold,
       });
     await this.watchWeather();
   }

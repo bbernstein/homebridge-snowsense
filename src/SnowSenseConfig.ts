@@ -1,4 +1,4 @@
-import {PlatformConfig} from "homebridge/lib/bridgeService";
+import {PlatformConfig} from 'homebridge/lib/bridgeService';
 
 export interface SnowSenseConfig extends PlatformConfig {
   apiKey: string;
