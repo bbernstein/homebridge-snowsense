@@ -12,6 +12,7 @@ export interface SnowSenseConfig extends PlatformConfig {
   coldPrecipitationThreshold?: number;
   onlyWhenCold: boolean;
   coldTemperatureThreshold?: number;
+  consecutiveHoursOfSnowIsSnowy: number;
 
   // old configs
   latitude?: number;

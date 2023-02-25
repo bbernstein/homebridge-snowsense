@@ -99,6 +99,14 @@
         "maximum": 6,
         "description": "If snow was seen in the past x hours, it's considered snowy."
       },
+      "consecutiveHoursOfSnowIsSnowy": {
+        "title": "Consecutive hours of predicted snow is 'snowy' (consecutiveHoursOfSnowIsSnowy)",
+        "type": "integer",
+        "default": "0",
+        "minimum": 0,
+        "maximum": 6,
+        "description": "There must be this many consecutive hours of snow in the forecast to be considered 'snowy'."
+      },
       "onlyWhenCold": {
         "title": "Only trigger when it is colder than a threshold (onlyWhenCold)",
         "type": "boolean",
@@ -133,7 +141,8 @@
       "items": [
         "hoursBeforeSnowIsSnowy",
         "hoursAfterSnowIsSnowy",
-        "apiThrottleMinutes"
+        "apiThrottleMinutes",
+        "consecutiveHoursOfSnowIsSnowy"
       ]
     },
     {

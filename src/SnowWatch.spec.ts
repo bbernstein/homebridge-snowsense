@@ -48,6 +48,7 @@ describe('SnowWatch', () => {
             hoursAfterSnowIsSnowy: 2,
             hoursBeforeSnowIsSnowy: 2,
             onlyWhenCold: false,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -73,6 +74,7 @@ describe('SnowWatch', () => {
             hoursAfterSnowIsSnowy: 3,
             hoursBeforeSnowIsSnowy: 3,
             onlyWhenCold: false,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -121,6 +123,7 @@ describe('SnowWatch', () => {
             hoursBeforeSnowIsSnowy: 2,
             onlyWhenCold: true,
             coldTemperatureThreshold: 20,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -148,6 +151,7 @@ describe('SnowWatch', () => {
             hoursBeforeSnowIsSnowy: 2,
             onlyWhenCold: true,
             coldTemperatureThreshold: 32,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -161,6 +165,82 @@ describe('SnowWatch', () => {
       });
     });
 
+  });
+
+  describe('when we have two consecutive hours of snow', () => {
+    beforeEach(() => {
+      forecast = {
+        'current': {'dt': 1670879317, 'temp': 35.24, 'hasSnow': false, 'hasPrecip': false},
+        'hourly': [
+          {'dt': 1670878800, 'temp': 35.24, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': 1670882400, 'temp': 32.87, 'hasSnow': true, 'hasPrecip': true},
+          {'dt': 1670886000, 'temp': 32.33, 'hasSnow': true, 'hasPrecip': true},
+          {'dt': 1670889600, 'temp': 32.61, 'hasSnow': false, 'hasPrecip': false},
+          {'dt': 1670893200, 'temp': 32.71, 'hasSnow': false, 'hasPrecip': false},
+        ],
+      };
+
+      // use the above forecast mock
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .mockResolvedValueOnce(forecast);
+    });
+
+    describe('expecting two consecutive hours of snow', () => {
+      beforeEach(() => {
+
+        SnowWatch.init(console,
+          {
+            apiKey: 'xxx',
+            apiVersion: '2.5',
+            debugOn: false,
+            location: '0,0',
+            units: 'imperial',
+            hoursAfterSnowIsSnowy: 2,
+            hoursBeforeSnowIsSnowy: 2,
+            onlyWhenCold: false,
+            coldTemperatureThreshold: 20,
+            consecutiveHoursOfSnowIsSnowy: 2,
+          });
+      });
+
+      it('should see snowing later', async () => {
+        const watcher = SnowWatch.getInstance();
+        expect(watcher).toBeDefined();
+        await watcher.updatePredictionStatus();
+        expect(watcher.snowingNow()).toBe(false);
+        expect(watcher.snowingSoon()).toBe(true);
+        expect(watcher.snowedRecently()).toBe(true);
+      });
+    });
+
+    describe('expecting fail to see three consecutive hours of snow', () => {
+      beforeEach(() => {
+
+        SnowWatch.init(console,
+          {
+            apiKey: 'xxx',
+            apiVersion: '2.5',
+            debugOn: false,
+            location: '0,0',
+            units: 'imperial',
+            hoursAfterSnowIsSnowy: 2,
+            hoursBeforeSnowIsSnowy: 2,
+            onlyWhenCold: false,
+            coldTemperatureThreshold: 20,
+            consecutiveHoursOfSnowIsSnowy: 3,
+          });
+      });
+
+      it('should see snowing later', async () => {
+        const watcher = SnowWatch.getInstance();
+        expect(watcher).toBeDefined();
+        await watcher.updatePredictionStatus();
+        expect(watcher.snowingNow()).toBe(false);
+        expect(watcher.snowingSoon()).toBe(false);
+        expect(watcher.snowedRecently()).toBe(false);
+      });
+    });
   });
 
   describe('when cold precipitation coming in three hours', () => {
@@ -196,6 +276,7 @@ describe('SnowWatch', () => {
             hoursBeforeSnowIsSnowy: 2,
             coldPrecipitationThreshold: 32,
             onlyWhenCold: false,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -222,6 +303,7 @@ describe('SnowWatch', () => {
             hoursBeforeSnowIsSnowy: 3,
             coldPrecipitationThreshold: 32,
             onlyWhenCold: false,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -272,6 +354,7 @@ describe('SnowWatch', () => {
             hoursAfterSnowIsSnowy: 3,
             hoursBeforeSnowIsSnowy: 3,
             onlyWhenCold: false,
+            consecutiveHoursOfSnowIsSnowy: 0,
           });
       });
 
@@ -335,6 +418,7 @@ describe('SnowWatch', () => {
           hoursAfterSnowIsSnowy: 3,
           hoursBeforeSnowIsSnowy: 3,
           onlyWhenCold: false,
+          consecutiveHoursOfSnowIsSnowy: 0,
         });
     });
 
@@ -406,6 +490,7 @@ describe('SnowWatch', () => {
           hoursAfterSnowIsSnowy: 0,
           hoursBeforeSnowIsSnowy: 0,
           onlyWhenCold: false,
+          consecutiveHoursOfSnowIsSnowy: 0,
         });
     });
 
@@ -427,7 +512,5 @@ describe('SnowWatch', () => {
       expect(watcher.snowedRecently()).toBe(false);
     });
   });
-
-
 });
 

@@ -56,6 +56,11 @@ export type SnowWatchOptions = {
    * If onlyWhenCold is true, only consider it snowy if the given temperature is below this number
    */
   coldTemperatureThreshold?: number;
+
+  /**
+   * Number of consecutive hours of snow in the forecast to consider it "snowing"
+   */
+  consecutiveHoursOfSnowIsSnowy: number;
 };
 
 export default class SnowWatch {
@@ -75,6 +80,7 @@ export default class SnowWatch {
   private readonly logger: Logger;
   private readonly onlyWhenCold: boolean;
   private readonly coldTemperatureThreshold?: number;
+  private readonly consecutiveHoursOfSnowIsSnowy: number;
 
   constructor(log: Logger, options: SnowWatchOptions) {
     this.hoursUntilSnowPredicted = options.hoursBeforeSnowIsSnowy !== undefined ? options.hoursBeforeSnowIsSnowy : 3;
@@ -88,12 +94,13 @@ export default class SnowWatch {
     this.isSetup = false;
     this.onlyWhenCold = options.onlyWhenCold;
     this.coldTemperatureThreshold = options.coldTemperatureThreshold;
+    this.consecutiveHoursOfSnowIsSnowy = options.consecutiveHoursOfSnowIsSnowy;
     this.logger = log;
     this.snowForecastService = new SnowForecastService(this.logger,
       {
         apiKey: options.apiKey,
         apiVersion: options.apiVersion,
-        debugOn : options.debugOn,
+        debugOn: options.debugOn,
         location: options.location,
         units: options.units,
         apiThrottleMinutes: options.apiThrottleMinutes,
@@ -224,19 +231,44 @@ export default class SnowWatch {
       this.logger.error('No forecast available');
       return;
     }
-    const nowMillis = new Date().getTime();
-    const millisInFuture = nowMillis + (this.hoursUntilSnowPredicted * 60 * 60 * 1000);
 
     // is it snowing now?
     this.currentlySnowing = this.isSnowyEnough(forecast.current);
 
+    const nowMillis = new Date().getTime();
+    const millisInFuture = nowMillis + (this.hoursUntilSnowPredicted * 60 * 60 * 1000);
+
     // is it snowing in the next x hours (where x = hoursUntilSnowPredicted)?
     const hoursWithSnowPredicted = forecast.hourly
       // Filter out any snow reports that are too far in the future or not snowing
-      .filter((snowReport) => {
-        return (snowReport.dt * 1000 < millisInFuture && this.isSnowyEnough(snowReport));
-      });
+      .filter((snowReport) => snowReport.dt * 1000 < millisInFuture && this.isSnowyEnough(snowReport));
     this.snowPredicted = hoursWithSnowPredicted.length > 0;
+
+    // handle if we care about consecutive hours of snow
+    if (this.snowPredicted && this.consecutiveHoursOfSnowIsSnowy > 0) {
+      // handle check for consecutive hours of snow after it starts
+      const firstHourWithSnow = Math.min(...hoursWithSnowPredicted.map(snowReport => snowReport.dt));
+      const millisFromStartToConsecutive = firstHourWithSnow * 1000 + (this.consecutiveHoursOfSnowIsSnowy * 60 * 60 * 1000);
+
+      const numberOfNonSnowyHours = forecast.hourly
+
+        // filter in reports from consecutive hours after hoursUntilSnowPredicted
+        .filter(snowReport => firstHourWithSnow * 1000 <= snowReport.dt * 1000
+          && snowReport.dt * 1000 < millisFromStartToConsecutive)
+
+        // find any that DON'T have snow predicted
+        .filter(snowReport => !this.isSnowyEnough(snowReport))
+
+        // count the number of those non-snowy hours
+        .length;
+
+      // if there are no non-snowy hours, then it's snowing for the number of consecutive hours
+      this.snowPredicted = numberOfNonSnowyHours === 0;
+      if (!this.snowPredicted) {
+        this.debug(`Snow predicted, but not for ${this.consecutiveHoursOfSnowIsSnowy} consecutive hours. ` +
+          `There were ${numberOfNonSnowyHours} non-snowy hours found.`);
+      }
+    }
 
     // just for debugging, if snow coming, output which hour that is
     if (this.snowPredicted) {
@@ -244,7 +276,7 @@ export default class SnowWatch {
       this.debug(`Snow predicted in ${(predictedTime.getTime() - new Date().getTime()) / 1000 / 60} minutes`);
     }
 
-    // if it's snowing now or soon, reset the timer of when sonw was last forecasted
+    // if it's snowing now or soon, reset the timer of when snow was last forecasted
     if (this.currentlySnowing || this.snowPredicted) {
       this.setSnowForecastedTime(new Date());
     }
