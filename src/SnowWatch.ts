@@ -46,6 +46,16 @@ export type SnowWatchOptions = {
    * If the current temperature is below this number and it's precipitating, consider it "snowing"
    */
   coldPrecipitationThreshold?: number;
+
+  /**
+   * Only consider it snowy if the given temperature is below coldPrecipitationThreshold
+   */
+  onlyWhenCold: boolean;
+
+  /**
+   * If onlyWhenCold is true, only consider it snowy if the given temperature is below this number
+   */
+  coldTemperatureThreshold?: number;
 };
 
 export default class SnowWatch {
@@ -63,6 +73,8 @@ export default class SnowWatch {
   private latestForecast?: SnowForecast;
   private isSetup: boolean;
   private readonly logger: Logger;
+  private readonly onlyWhenCold: boolean;
+  private readonly coldTemperatureThreshold?: number;
 
   constructor(log: Logger, options: SnowWatchOptions) {
     this.hoursUntilSnowPredicted = options.hoursBeforeSnowIsSnowy !== undefined ? options.hoursBeforeSnowIsSnowy : 3;
@@ -74,6 +86,8 @@ export default class SnowWatch {
     this.snowPredicted = false;
     this.hasSnowed = false;
     this.isSetup = false;
+    this.onlyWhenCold = options.onlyWhenCold;
+    this.coldTemperatureThreshold = options.coldTemperatureThreshold;
     this.logger = log;
     this.snowForecastService = new SnowForecastService(this.logger,
       {
@@ -149,7 +163,11 @@ export default class SnowWatch {
   private isSnowyEnough(snowReport: SnowReport): boolean {
     const isColdAndPrecipitating = (this.coldPrecipitationThreshold !== undefined) &&
       snowReport.temp < this.coldPrecipitationThreshold && snowReport.hasPrecip;
-    return (snowReport.hasSnow || isColdAndPrecipitating);
+    const isSnowy = snowReport.hasSnow || isColdAndPrecipitating;
+    if (this.onlyWhenCold && this.coldTemperatureThreshold !== undefined) {
+      return isSnowy && snowReport.temp <= this.coldTemperatureThreshold;
+    }
+    return isSnowy;
   }
 
   /**
@@ -174,7 +192,7 @@ export default class SnowWatch {
   }
 
   /**
-   * Does it look like it will be snowing soonn?
+   * Does it look like it will be snowing soon?
    * Check if it's snowing now or if it's predicted to snow in the next few hours
    *
    * @returns true if it's snowing now or if it's predicted to snow in the next few hours

@@ -5,7 +5,6 @@ import {
   DynamicPlatformPlugin,
   Logger,
   PlatformAccessory,
-  PlatformConfig,
   Service,
 } from 'homebridge';
 
@@ -13,6 +12,8 @@ import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {IsSnowyAccessory} from './platformAccessory';
 import SnowWatch from './SnowWatch';
 import {readFileSync, writeFileSync} from 'fs';
+import {SnowSenseConfig} from "./SnowSenseConfig";
+import {PlatformConfig} from "homebridge/lib/bridgeService";
 
 /**
  * HomebridgePlatform
@@ -26,19 +27,21 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   public readonly accessories: PlatformAccessory[] = [];
   private snowyAccessories: IsSnowyAccessory[] = [];
   private readonly forecastFrequencyMillis = 1000 * 60 * 5;
-  private readonly debugOn = false;
+  private readonly debugOn: boolean = false;
 
   constructor(
     public readonly log: Logger,
-    public readonly config: PlatformConfig,
+    public readonly platformConfig: PlatformConfig,
     public readonly api: API,
   ) {
+
+    const config = platformConfig as SnowSenseConfig;
 
     // if configs were from an old version, update and rewrite them
     this.upgradeConfigs(config);
 
-    this.debugOn = this.config.debugOn;
-    this.debug('Finished initializing platform:', this.config.name);
+    this.debugOn = this.platformConfig.debugOn;
+    this.debug('Finished initializing platform:', this.platformConfig.name);
     this.forecastFrequencyMillis = 1000 * 60 * (config.apiThrottleMinutes || 15);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
@@ -51,7 +54,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     });
   }
 
-  private upgradeConfigs(config: PlatformConfig) {
+  private upgradeConfigs(config: SnowSenseConfig) {
     let configChanged = false;
     // read legacy configs, and see if anything changed
     if (!config.apiKey && config.key) {
@@ -110,7 +113,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     }
   }
 
-  private async startWatchingWeather(config: PlatformConfig) {
+  private async startWatchingWeather(config: SnowSenseConfig) {
     await SnowWatch.init(this.log,
       {
         apiKey: config.apiKey,
@@ -122,6 +125,8 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         hoursBeforeSnowIsSnowy: config.hoursBeforeSnowIsSnowy,
         hoursAfterSnowIsSnowy: config.hoursAfterSnowIsSnowy,
         coldPrecipitationThreshold: config.coldPrecipitationThreshold,
+        onlyWhenCold: config.onlyWhenCold,
+        coldTemperatureThreshold: config.coldTemperatureThreshold
       });
     await this.watchWeather();
   }
