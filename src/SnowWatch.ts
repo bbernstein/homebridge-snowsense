@@ -75,7 +75,7 @@ export default class SnowWatch {
   private snowPredicted: boolean;
   private hasSnowed: boolean;
   private readonly snowForecastService: SnowForecastService;
-  private latestForecast?: SnowForecast;
+  public latestForecast?: SnowForecast; // made public for testing (hack)
   private isSetup: boolean;
   private readonly logger: Logger;
   private readonly onlyWhenCold: boolean;
