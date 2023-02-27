@@ -36,6 +36,9 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   ) {
 
     const config = platformConfig as SnowSenseConfig;
+    if (config.units !== 'imperial' && config.units !== 'metric' && config.units !== 'standard') {
+      config.units = 'imperial';
+    }
 
     // if configs were from an old version, update and rewrite them
     this.upgradeConfigs(config);

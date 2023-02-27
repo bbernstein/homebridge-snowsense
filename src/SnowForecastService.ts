@@ -66,6 +66,7 @@ export default class SnowForecastService {
   private fetchLock: boolean;
   private readonly apiThrottleMillis;
   public latLon?: { lat: number; lon: number };
+  private lockTimeoutMillis = 2000;
 
   constructor(log: Logger, options: SnowForecastOptions) {
     this.logger = log;
@@ -75,7 +76,7 @@ export default class SnowForecastService {
     this.apiVersion = options.apiVersion;
     this.debugOn = !!options.debugOn;
     this.location = options.location || 'New York,NY,US';
-    this.units = this.sanitizeUnits(options.units || 'imperial');
+    this.units = options.units || 'imperial';
 
     // no more frequently than every 5 minutes, default to 15 minutes
     const throttleMinutes = options.apiThrottleMinutes || 15;
@@ -97,19 +98,6 @@ export default class SnowForecastService {
     this.weatherUrl = `https://api.openweathermap.org/data/${this.apiVersion}/onecall?lat=${
       this.latLon.lat}&lon=${this.latLon.lon}&appid=${this.apiKey}&units=${
       this.units}&exclude=minutely,alerts,daily`;
-  }
-
-  /**
-   * Return a sanitized version of the given string, which is either 'imperial' or 'metric'
-   *
-   * @param units type of units, either 'imperial' or 'metric'
-   * @private
-   */
-  private sanitizeUnits(units: string) {
-    if (units === 'imperial' || units === 'metric' || units === 'standard') {
-      return units;
-    }
-    return 'imperial';
   }
 
   /**
@@ -168,8 +156,10 @@ export default class SnowForecastService {
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
     return axios.get(geocodingApiUrl).then((response) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((response as any).cod === 401) {
+      if (!response) {
+        throw new Error(`No location found for city (${city})`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if ((response as any).cod === 401) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         throw new Error((response as any).message);
       } else if (response.data.length === 0) {
@@ -229,7 +219,8 @@ export default class SnowForecastService {
    */
   public async getSnowForecast(): Promise<SnowForecast> {
     // if another instance is already fetching, wait for it to finish
-    for (let i = 0; i < 20 && this.fetchLock; i++) {
+    const endTime: number = new Date().getTime() + this.lockTimeoutMillis;
+    while (new Date().getTime() < endTime && this.fetchLock) {
       await new Promise(r => setTimeout(r, 10));
     }
     // if we are still locked, throw an error

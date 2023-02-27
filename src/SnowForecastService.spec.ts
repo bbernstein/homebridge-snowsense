@@ -129,19 +129,33 @@ describe('SnowForecastService', () => {
       expect(forecast).toStrictEqual(forecast1);
     });
 
+    // This test breaks when fakeTimers are used as that breaks the sleep function
+    it('should timeout when it takes too long', async () => {
+      const weather = new SnowForecastService(console,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
+      const weatherProto = Object.getPrototypeOf(weather);
+      weatherProto.debugOn = true;
+      weatherProto.logger = console;
+      weatherProto.fetchLock = true;
+      weatherProto.lockTimeoutMillis = 20;
+      try {
+        expect(true).toBe(false);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        expect(e.message).toBe('Weather fetch is locked');
+      }
+    });
   });
 
   describe('Zip to lat,lon', () => {
-    beforeEach(() => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({data: zipToLocationData}));
-    });
-
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
     it('should set lat,lon to values from zip api', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve({data: zipToLocationData}));
+
       const weather = new SnowForecastService(console,
         {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
       await weather.setup();
@@ -149,38 +163,127 @@ describe('SnowForecastService', () => {
       expect(weather.units).toBe('metric');
     });
 
+    it('should handle failed zip api', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve(null));
+      const weather = new SnowForecastService(console,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
+      try {
+        await weather.setup();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        expect(e.message).toBe('No location found for zip code (02461)');
+      }
+    });
+
   });
 
   describe('City to lat,lon', () => {
-    beforeEach(() => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
-    });
-
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
     it('should set lat,lon to values from city api', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
+
       const weather = new SnowForecastService(console,
-        {apiKey: 'xxx', apiVersion: '3.0', location: 'Newton Highlands, MA, US', units: 'standard', apiThrottleMinutes: 10});
+        {
+          apiKey: 'xxx',
+          apiVersion: '3.0',
+          location: 'Newton Highlands, MA, US',
+          units: 'standard',
+          apiThrottleMinutes: 10,
+        });
       await weather.setup();
       expect(weather.latLon).toStrictEqual({lat: 42.3219158, lon: -71.2071228});
       expect(weather.units).toBe('standard');
     });
+
+    it('should handle 401 when calling city api', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve({cod: 401, message: 'fail'}));
+      const weather = new SnowForecastService(console,
+        {
+          apiKey: 'xxx',
+          apiVersion: '3.0',
+          location: 'Newton Highlands, MA, US',
+          units: 'standard',
+          apiThrottleMinutes: 10,
+        });
+      let failed = false;
+      try {
+        await weather.setup();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        expect(e.message).toBe('fail');
+        failed = true;
+      } finally {
+        expect(axios.get).toHaveBeenCalledTimes(1);
+        expect(failed).toBe(true);
+      }
+
+    });
+
+    it('should handle bad city api response', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve(null));
+      const weather = new SnowForecastService(console,
+        {
+          apiKey: 'xxx',
+          apiVersion: '3.0',
+          location: 'Newton Highlands, MA, US',
+          units: 'standard',
+          apiThrottleMinutes: 10,
+        });
+      let failed = false;
+      try {
+        await weather.setup();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        expect(e.message).toBe('No location found for city (Newton Highlands, MA, US)');
+        failed = true;
+      } finally {
+        expect(axios.get).toHaveBeenCalledTimes(1);
+        expect(failed).toBe(true);
+      }
+
+    });
+
+    it('should handle bad data from api', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve({data: ''}));
+      const weather = new SnowForecastService(console,
+        {
+          apiKey: 'xxx',
+          apiVersion: '3.0',
+          location: 'Newton Highlands, MA, US',
+          units: 'standard',
+          apiThrottleMinutes: 10,
+        });
+      let failed = false;
+      try {
+        await weather.setup();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        expect(e.message).toContain('Did you include a country code');
+        failed = true;
+      } finally {
+        expect(axios.get).toHaveBeenCalledTimes(1);
+        expect(failed).toBe(true);
+      }
+    });
   });
 
   describe('Test bad api url', () => {
-    beforeEach(() => {
-      axios.get = jest.fn()
-        .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
-    });
-
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
     it('should fail when no url', async () => {
+      axios.get = jest.fn()
+        .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
+
       const weather = new SnowForecastService(console,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
@@ -192,13 +295,63 @@ describe('SnowForecastService', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         expect(e.message).toContain('URL not yet set for openweathermap');
+        return;
       }
+      expect(false).toBe(true);
 
       weatherProto.weatherUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
       const result = await weatherProto.getWeatherFromApi();
       expect(result).toStrictEqual({a: 1, b: 2});
+    });
 
+    it('should work when there is a url', async () => {
+      axios.get = jest.fn()
+        .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
+
+      const weather = new SnowForecastService(console,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
+      await weather.setup();
+      const weatherProto = Object.getPrototypeOf(weather);
+      weatherProto.weatherUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
+      const result = await weatherProto.getWeatherFromApi();
+      expect(result).toStrictEqual({a: 1, b: 2});
+    });
+
+    it('should fail when api call throws error', async () => {
+      axios.get = jest.fn()
+        .mockImplementation(() => Promise.reject({response: {data: {message: 'fail'}}}));
+
+      const weather = new SnowForecastService(console,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
+      await weather.setup();
+      const weatherProto = Object.getPrototypeOf(weather);
+      weatherProto.weatherUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
+      try {
+        await weatherProto.getWeatherFromApi();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        expect(e.message).toContain('Error getting weather from OpenWeatherMap: fail');
+        return;
+      }
+      expect(false).toBe(true);
     });
   });
 
+  describe('Test debug logging', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should output to console.debug', async () => {
+      const weather = new SnowForecastService(console,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
+      await weather.setup();
+      const spy = jest.spyOn(console, 'debug');
+      const weatherProto = Object.getPrototypeOf(weather);
+      weatherProto.debugOn = true;
+      weatherProto.logger = console;
+      weatherProto.debug('test');
+      expect(spy).toHaveBeenCalled();
+    });
+  });
 });

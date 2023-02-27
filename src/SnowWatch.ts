@@ -151,9 +151,6 @@ export default class SnowWatch {
    */
   private async readSnowForecast(): Promise<SnowForecast | undefined> {
     await this.setup();
-    if (!this.snowForecastService) {
-      throw new Error('Weather service not initialized');
-    }
     this.latestForecast = await this.snowForecastService.getSnowForecast();
     return this.latestForecast;
   }

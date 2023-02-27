@@ -101,6 +101,19 @@ describe('SnowWatch', () => {
       expect(watcher.latestForecast?.hourly).toHaveLength(3);
       expect(watcher.latestForecast?.hourly[0].dt).toBe(1670878800);
     });
+
+    it('should get instance, but if forecast fails, we get nothing', async () => {
+      // mock the forecast service to return null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jest.spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .mockResolvedValueOnce(null);
+
+      SnowWatch.init(console, swOptions);
+      const watcher = SnowWatch.getInstance();
+      await watcher.updatePredictionStatus();
+      expect(watcher.latestForecast).toBeNull();
+    });
+
   });
 
   describe('when snow coming in three hours', () => {
@@ -377,4 +390,22 @@ describe('SnowWatch', () => {
       expect(watcher.snowedRecently()).toBe(false);
     });
   });
+
+  describe('Test debug logging', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should output to console.debug', async () => {
+      await SnowWatch.init(console, swOptions);
+      const watcher = SnowWatch.getInstance();
+      const spy = jest.spyOn(console, 'debug');
+      const watcherProto = Object.getPrototypeOf(watcher);
+      watcherProto.debugOn = true;
+      watcherProto.logger = console;
+      watcherProto.debug('test');
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
 });
