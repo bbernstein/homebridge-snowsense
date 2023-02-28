@@ -70,7 +70,7 @@ describe('SnowWatch', () => {
     jest.restoreAllMocks();
   });
 
-  describe('when we can not get SnowWatch instannce', () => {
+  describe('when we can not get SnowWatch instance', () => {
     it('should NOT get instance', () => {
       expect(SnowWatch.getInstance).toThrow('SnowWatch not initialized');
     });
@@ -148,6 +148,15 @@ describe('SnowWatch', () => {
         expect(watcher.snowedRecently()).toBe(true);
       });
     });
+
+    describe('when expecting snow in zero hours', () => {
+      it('should not be snowing now or later', async () => {
+        const watcher = await getWatcher({...swOptions, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
+        expect(watcher.snowingNow()).toBe(false);
+        expect(watcher.snowingSoon()).toBe(false);
+        expect(watcher.snowedRecently()).toBe(false);
+      });
+    });
   });
 
 
@@ -214,6 +223,15 @@ describe('SnowWatch', () => {
     describe('expecting fail to see three consecutive hours of snow', () => {
       it('should see snowing later', async () => {
         const watcher = await getWatcher({...swOptions, consecutiveHoursOfSnowIsSnowy: 3});
+        expect(watcher.snowingNow()).toBe(false);
+        expect(watcher.snowingSoon()).toBe(false);
+        expect(watcher.snowedRecently()).toBe(false);
+      });
+    });
+
+    describe('when expecting snow in zero hours', () => {
+      it('should see not snowing now or later', async () => {
+        const watcher = await getWatcher({...swOptions, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
         expect(watcher.snowingNow()).toBe(false);
         expect(watcher.snowingSoon()).toBe(false);
         expect(watcher.snowedRecently()).toBe(false);
@@ -299,6 +317,15 @@ describe('SnowWatch', () => {
         expect(watcher.snowingNow()).toBe(false);
         expect(watcher.snowingSoon()).toBe(false);
         expect(watcher.snowedRecently()).toBe(true);
+      });
+
+      describe('when expecting snow in zero hours', () => {
+        it('should not be snowing now or later', async () => {
+          const watcher = await getWatcher({...swOptions, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
+          expect(watcher.snowingNow()).toBe(false);
+          expect(watcher.snowingSoon()).toBe(false);
+          expect(watcher.snowedRecently()).toBe(false);
+        });
       });
     });
   });
