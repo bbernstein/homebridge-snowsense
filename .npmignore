@@ -1,6 +1,9 @@
 # Ignore source code
 src
 
+.idea/
+jest.config.js
+
 # ------------- Defaults ------------- #
 
 # gitHub actions

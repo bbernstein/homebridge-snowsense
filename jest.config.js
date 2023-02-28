@@ -4,6 +4,7 @@ module.exports = {
   testEnvironment: "node",
   coverageReporters: ["lcov"],
   collectCoverageFrom: [
-    "src/**"
+    "src/SnowForecastService.ts",
+    "src/SnowWatch.ts"
   ],
 };

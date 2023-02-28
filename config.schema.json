@@ -98,6 +98,28 @@
         "minimum": 0,
         "maximum": 6,
         "description": "If snow was seen in the past x hours, it's considered snowy."
+      },
+      "consecutiveHoursOfSnowIsSnowy": {
+        "title": "Consecutive hours of predicted snow is 'snowy' (consecutiveHoursOfSnowIsSnowy)",
+        "type": "integer",
+        "default": "0",
+        "minimum": 0,
+        "maximum": 6,
+        "description": "There must be this many consecutive hours of snow in the forecast to be considered 'snowy'."
+      },
+      "onlyWhenCold": {
+        "title": "Only trigger when it is colder than a threshold (onlyWhenCold)",
+        "type": "boolean",
+        "default": false,
+        "description": "Only trigger when it's cold, even if it's snowing. This is useful since snow might not be sticking to the ground if it's too warm."
+      },
+      "coldTemperatureThreshold": {
+        "title": "Cold Threshold (coldTemperatureThreshold)",
+        "type": "number",
+        "default": 32,
+        "minimum": -20,
+        "maximum": 50,
+        "description": "Only relevant when \"Only When Cold\" is turned on. Trigger when it's colder than this temperature. In the given units."
       }
     }
   },
@@ -113,19 +135,37 @@
     },
     {
       "type": "fieldset",
-      "title": "Advanced Settings",
-      "description": "These settings are optional but good for tweaking.",
+      "title": "Time Settings",
+      "description": "These settings about timing of events.",
       "expandable": true,
       "items": [
         "hoursBeforeSnowIsSnowy",
         "hoursAfterSnowIsSnowy",
-        "units",
-        "apiVersion",
         "apiThrottleMinutes",
+        "consecutiveHoursOfSnowIsSnowy"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Temperature Settings",
+      "description": "These settings are about temperatures.",
+      "expandable": true,
+      "items": [
+        "units",
+        "onlyWhenCold",
+        "coldTemperatureThreshold"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced Settings",
+      "description": "Less common settings.",
+      "expandable": true,
+      "items": [
+        "apiVersion",
         "name",
         "debugOn"
       ]
-
     }
   ]
 }
