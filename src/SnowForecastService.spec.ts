@@ -139,6 +139,7 @@ describe('SnowForecastService', () => {
       weatherProto.fetchLock = true;
       weatherProto.lockTimeoutMillis = 20;
       try {
+        await weatherProto.getSnowForecast();
         expect(true).toBe(false);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
