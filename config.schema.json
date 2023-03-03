@@ -162,7 +162,7 @@
       "orderable": false,
       "buttonText": "Add Sensor",
       "items": [
-        "sensors[].name",
+        "sensors[].displayName",
         "sensors[].hoursBeforeSnowIsSnowy",
         "sensors[].hoursAfterSnowIsSnowy",
         "sensors[].consecutiveHoursFutureIsSnowy",
