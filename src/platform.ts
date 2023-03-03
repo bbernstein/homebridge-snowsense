@@ -133,12 +133,9 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         location: config.location,
         units: config.units,
         apiThrottleMinutes: config.apiThrottleMinutes || 15,
-        // hoursBeforeSnowIsSnowy: config.hoursBeforeSnowIsSnowy,
-        // hoursAfterSnowIsSnowy: config.hoursAfterSnowIsSnowy,
         coldPrecipitationThreshold: config.coldPrecipitationThreshold,
         onlyWhenCold: config.onlyWhenCold,
         coldTemperatureThreshold: config.coldTemperatureThreshold,
-        // consecutiveHoursFutureIsSnowy: config.consecutiveHoursFutureIsSnowy,
       });
     await this.watchWeather();
   }
@@ -152,10 +149,6 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       that.log.error(`Error getting updated weather: ${e.message}`);
       return;
     }
-    // const wasSnowing = watcher.snowedRecently();
-    // const isSnowing = watcher.snowingNow();
-    // const willSnow = watcher.snowingSoon();
-    // const isSnowy = wasSnowing || isSnowing || willSnow;
 
     // tell all the accessories to update their values
     that.snowyAccessories.forEach(snowyAccessory => {
