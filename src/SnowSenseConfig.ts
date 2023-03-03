@@ -1,5 +1,13 @@
 import {PlatformConfig} from 'homebridge/lib/bridgeService';
 
+export interface DeviceConfig {
+  displayName: string;
+  hoursBeforeSnowIsSnowy: number;
+  hoursAfterSnowIsSnowy: number;
+  consecutiveHoursFutureIsSnowy: number;
+  consecutiveHoursPastIsSnowy: number;
+}
+
 export interface SnowSenseConfig extends PlatformConfig {
   apiKey: string;
   apiVersion: string;
@@ -7,14 +15,15 @@ export interface SnowSenseConfig extends PlatformConfig {
   debugOn: boolean;
   units?: 'imperial' | 'metric' | 'standard';
   location: string;
-  hoursBeforeSnowIsSnowy: number;
-  hoursAfterSnowIsSnowy: number;
   coldPrecipitationThreshold?: number;
   onlyWhenCold: boolean;
   coldTemperatureThreshold?: number;
-  consecutiveHoursOfSnowIsSnowy: number;
+  sensors?: [DeviceConfig];
 
   // old configs
+  hoursBeforeSnowIsSnowy: number;
+  hoursAfterSnowIsSnowy: number;
+  consecutiveHoursOfSnowIsSnowy: number;
   latitude?: number;
   longitude?: number;
   afterSnowStops?: number;
