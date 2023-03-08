@@ -136,6 +136,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         coldPrecipitationThreshold: config.coldPrecipitationThreshold,
         onlyWhenCold: config.onlyWhenCold,
         coldTemperatureThreshold: config.coldTemperatureThreshold,
+        storagePath: this.api.user.storagePath(),
       });
     await this.watchWeather();
   }

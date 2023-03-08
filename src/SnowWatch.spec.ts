@@ -1,16 +1,19 @@
-import SnowWatch, {SnowWatchOptions} from './SnowWatch';
+import SnowWatch, {HISTORY_FILE, SnowWatchOptions} from './SnowWatch';
 import SnowForecastService, {SnowForecast, SnowReport} from './SnowForecastService';
 import {DeviceConfig} from './SnowSenseConfig';
+import fs from 'fs';
+import path from 'path';
 
 // template options for default values, if not provided
 const swOptions: SnowWatchOptions = {
   apiKey: 'xxx',
   apiVersion: '2.5',
-  debugOn: true,
+  debugOn: false,
   location: '0,0',
   units: 'imperial',
   onlyWhenCold: false,
   coldTemperatureThreshold: 32,
+  storagePath: './snowwatchtest',
 };
 
 const dConfig: DeviceConfig = {
@@ -50,6 +53,21 @@ const readMockForecast = async (watcher, forecast) => {
   await watcher.updatePredictionStatus();
 };
 
+const deleteTestData = () => {
+  const storagePath = swOptions.storagePath;
+  try {
+    if (fs.existsSync(storagePath)) {
+      const filePath = path.join(storagePath, HISTORY_FILE);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      fs.rmdirSync(storagePath);
+    }
+  } catch (e: unknown) {
+    // ignore
+  }
+};
+
 // faking timers, so all date/times are relative to these
 const nowTime = new Date(1670879317000);
 const startDt = 1670878800;
@@ -73,10 +91,12 @@ describe('SnowWatch', () => {
   let forecast: SnowForecast;
 
   beforeEach(() => {
+    deleteTestData();
     jest.useFakeTimers().setSystemTime(new Date(nowTime));
   });
 
   afterEach(() => {
+    deleteTestData();
     jest.restoreAllMocks();
   });
 
@@ -123,7 +143,110 @@ describe('SnowWatch', () => {
       await watcher.updatePredictionStatus();
       expect(watcher.latestForecast).toBeNull();
     });
+  });
 
+  describe('check issues with reading/writing history', () => {
+    it('should read an empty history', async () => {
+      // use the above forecast mock
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await SnowWatch.init(console, swOptions);
+      const watcher = SnowWatch.getInstance();
+      const watcherProto = Object.getPrototypeOf(watcher);
+      watcherProto.logger = console;
+      watcherProto.storagePath = swOptions.storagePath;
+      const history = watcherProto.readPastReports(swOptions.storagePath);
+      expect(history).toHaveLength(0);
+    });
+
+    it('should write and read reports', async () => {
+      await SnowWatch.init(console, swOptions);
+      const watcher = SnowWatch.getInstance();
+      const watcherProto = Object.getPrototypeOf(watcher);
+      watcherProto.logger = console;
+      watcherProto.storagePath = swOptions.storagePath;
+      const report = [makeForecast(1670879317, false, 35.24)];
+      watcherProto.writePastReports(swOptions.storagePath, report);
+      const history2 = watcherProto.readPastReports(swOptions.storagePath);
+      expect(history2).toEqual(report);
+    });
+
+    it('should fail to read history with non-array', async () => {
+      await SnowWatch.init(console, swOptions);
+      const watcher = SnowWatch.getInstance();
+      const watcherProto = Object.getPrototypeOf(watcher);
+      watcherProto.logger = console;
+      watcherProto.storagePath = swOptions.storagePath;
+      const report = 'this is not a json file';
+      watcherProto.writePastReports(swOptions.storagePath, report);
+      const history2 = watcherProto.readPastReports(swOptions.storagePath);
+      expect(history2).toEqual([]);
+    });
+
+    it('should fail to read history with bad object', async () => {
+      await SnowWatch.init(console, swOptions);
+      const watcher = SnowWatch.getInstance();
+      const watcherProto = Object.getPrototypeOf(watcher);
+      watcherProto.logger = console;
+      watcherProto.storagePath = swOptions.storagePath;
+      const report = [{a: 10, b: 'hi there', c: 'wrong type'}];
+      watcherProto.writePastReports(swOptions.storagePath, report);
+      const history2 = watcherProto.readPastReports(swOptions.storagePath);
+      expect(history2).toEqual([]);
+    });
+
+    describe('handle readonly storage dir', () => {
+      const filePath = path.join(swOptions.storagePath, HISTORY_FILE);
+      beforeEach(() => {
+        fs.mkdirSync(swOptions.storagePath, {mode: 0o555});
+      });
+      afterEach(() => {
+        fs.rmdirSync(swOptions.storagePath);
+      });
+
+      it('should fail to write to readonly dir', async () => {
+        await SnowWatch.init(console, swOptions);
+        const watcher = SnowWatch.getInstance();
+        const watcherProto = Object.getPrototypeOf(watcher);
+        watcherProto.logger = console;
+        watcherProto.storagePath = filePath;
+        const report = [makeForecast(1670879317, false, 35.24)];
+        watcherProto.writePastReports(watcherProto.storagePath, report);
+        const history2 = watcherProto.readPastReports(swOptions.storagePath);
+        expect(history2).toEqual([]);
+      });
+    });
+
+    describe('handle readonly file', () => {
+      const filePath = path.join(swOptions.storagePath, HISTORY_FILE);
+      it('should fail to write to readonly dir', async () => {
+        await SnowWatch.init(console, swOptions);
+        fs.mkdirSync(swOptions.storagePath, {mode: 0o777});
+        fs.writeFileSync(filePath, 'hi there', {mode: 0o444});
+        const watcher = SnowWatch.getInstance();
+        const watcherProto = Object.getPrototypeOf(watcher);
+        watcherProto.logger = console;
+        watcherProto.storagePath = swOptions.storagePath;
+        const report = [makeForecast(1670879317, false, 35.24)];
+        watcherProto.writePastReports(watcherProto.storagePath, report);
+        const history2 = watcherProto.readPastReports(swOptions.storagePath);
+        expect(history2).toEqual([]);
+      });
+    });
+
+    describe('handle unreadable file', () => {
+      const filePath = path.join(swOptions.storagePath, HISTORY_FILE);
+      it('should fail to write to readonly dir', async () => {
+        fs.mkdirSync(swOptions.storagePath, {mode: 0o777});
+        fs.writeFileSync(filePath, 'hi there', {mode: 0o000});
+        await SnowWatch.init(console, swOptions);
+        const watcher = SnowWatch.getInstance();
+        const watcherProto = Object.getPrototypeOf(watcher);
+        watcherProto.logger = console;
+        watcherProto.storagePath = swOptions.storagePath;
+        const history2 = watcherProto.readPastReports(swOptions.storagePath);
+        expect(history2).toEqual([]);
+      });
+    });
   });
 
   describe('snowing now but not past or future', () => {
@@ -417,24 +540,32 @@ describe('SnowWatch', () => {
         value = watcher.snowSensorValue({...dConfig, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
         expect(value).toBe(false);
 
-        value = watcher.snowSensorValue({...dConfig,
+        value = watcher.snowSensorValue({
+          ...dConfig,
           hoursAfterSnowIsSnowy: 2, consecutiveHoursPastIsSnowy: 2,
-          hoursBeforeSnowIsSnowy: 0, consecutiveHoursFutureIsSnowy: 0 });
+          hoursBeforeSnowIsSnowy: 0, consecutiveHoursFutureIsSnowy: 0,
+        });
         expect(value).toBe(true);
 
-        value = watcher.snowSensorValue({...dConfig,
-          hoursAfterSnowIsSnowy:2, consecutiveHoursPastIsSnowy: 3,
-          hoursBeforeSnowIsSnowy: 0, consecutiveHoursFutureIsSnowy: 0 });
+        value = watcher.snowSensorValue({
+          ...dConfig,
+          hoursAfterSnowIsSnowy: 2, consecutiveHoursPastIsSnowy: 3,
+          hoursBeforeSnowIsSnowy: 0, consecutiveHoursFutureIsSnowy: 0,
+        });
         expect(value).toBe(false);
 
-        value = watcher.snowSensorValue({...dConfig,
+        value = watcher.snowSensorValue({
+          ...dConfig,
           hoursAfterSnowIsSnowy: 0, consecutiveHoursPastIsSnowy: 0,
-          hoursBeforeSnowIsSnowy: 2, consecutiveHoursFutureIsSnowy: 2 });
+          hoursBeforeSnowIsSnowy: 2, consecutiveHoursFutureIsSnowy: 2,
+        });
         expect(value).toBe(true);
 
-        value = watcher.snowSensorValue({...dConfig,
-          hoursAfterSnowIsSnowy:0, consecutiveHoursPastIsSnowy: 0,
-          hoursBeforeSnowIsSnowy: 2, consecutiveHoursFutureIsSnowy: 4 });
+        value = watcher.snowSensorValue({
+          ...dConfig,
+          hoursAfterSnowIsSnowy: 0, consecutiveHoursPastIsSnowy: 0,
+          hoursBeforeSnowIsSnowy: 2, consecutiveHoursFutureIsSnowy: 4,
+        });
         expect(value).toBe(false);
       });
     });

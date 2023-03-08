@@ -1,6 +1,10 @@
 import {Logger} from 'homebridge';
 import SnowForecastService, {SnowForecast, SnowReport} from './SnowForecastService';
 import {DeviceConfig} from './SnowSenseConfig';
+import fs from 'fs';
+import path from 'path';
+
+export const HISTORY_FILE = 'snowsense-history.json';
 
 export type SnowWatchOptions = {
   /**
@@ -47,6 +51,11 @@ export type SnowWatchOptions = {
    * If onlyWhenCold is true, only consider it snowy if the given temperature is below this number
    */
   coldTemperatureThreshold?: number;
+
+  /**
+   * Where to store SnowReport history in case we shut down
+   */
+  storagePath: string;
 };
 
 interface SnowWatchValues {
@@ -69,6 +78,7 @@ export default class SnowWatch {
   private readonly onlyWhenCold: boolean;
   private readonly coldTemperatureThreshold?: number;
   private pastReports: SnowReport[] = [];
+  private storagePath: string;
   private currentReport?: SnowReport;
   private futureReports: SnowReport[] = [];
 
@@ -80,6 +90,8 @@ export default class SnowWatch {
     this.onlyWhenCold = options.onlyWhenCold;
     this.coldTemperatureThreshold = options.coldTemperatureThreshold;
     this.logger = log;
+    this.storagePath = options.storagePath;
+    this.pastReports = options.storagePath ? this.readPastReports(options.storagePath) : [];
     this.snowForecastService = new SnowForecastService(this.logger,
       {
         apiKey: options.apiKey,
@@ -89,6 +101,62 @@ export default class SnowWatch {
         units: options.units,
         apiThrottleMinutes: options.apiThrottleMinutes,
       });
+  }
+
+  private deleteFile(filePath: string) {
+    if (filePath) {
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e: unknown) {
+          // ignore
+        }
+      }
+    }
+  }
+
+  private readPastReports(storagePath: string): SnowReport[] {
+    const filePath = path.join(storagePath, HISTORY_FILE);
+    try {
+      if (fs.existsSync(filePath)) {
+        const result = JSON.parse(fs.readFileSync(filePath, 'utf8')) as SnowReport[];
+        if (!Array.isArray(result)) {
+          this.logger.error(`Expected array, got ${typeof result}`);
+          this.deleteFile(filePath);
+          return [];
+        }
+        if (result.length > 0) {
+          const first = result[0] as SnowReport;
+          if (!first || typeof first !== 'object' || first.dt === undefined || first.hasSnow === undefined) {
+            this.logger.error(`Expected SnowReport, got ${first}`);
+            this.deleteFile(filePath);
+            return [];
+          }
+        }
+        return result;
+      }
+    } catch (e: unknown) {
+      this.logger.error(`Error reading past reports from ${storagePath}`, e);
+      this.deleteFile(filePath);
+    }
+    return [];
+  }
+
+  private writePastReports(storagePath: string, reports: SnowReport[]) {
+    const filePath = path.join(storagePath, HISTORY_FILE);
+    try {
+      fs.mkdirSync(storagePath, {recursive: true, mode: 0o755});
+      fs.writeFileSync(filePath, JSON.stringify(reports), {encoding: 'utf8', flag: 'w'});
+    } catch (e: unknown) {
+      this.logger.error(`Error writing past reports to ${storagePath}`, e);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e: unknown) {
+          // ignore
+        }
+      }
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -183,17 +251,47 @@ export default class SnowWatch {
     }
 
     const forecast = this.convertToMillis(rawForecast);
-    // remember the past 24 hours of reports
+    this.addPastReport(forecast.current);
+    this.currentReport = forecast.current;
+    this.futureReports = forecast.hourly;
+  }
+
+  private millisToHours(millis: number): number {
+    return Math.floor(millis / 60 / 60 / 1000);
+  }
+
+  private addPastReport(report: SnowReport) {
     const nowMillis = new Date().getTime();
-    this.pastReports.push({...forecast.current, dt: forecast.current.dt});
+    this.pastReports.push({...report, dt: report.dt});
+    // remember the past 24 hours of reports
     this.pastReports = this.pastReports
       .filter((report) => {
         const diff = nowMillis - report.dt;
         return diff < 60 * 60 * 24 * 1000;
       })
-      .sort((a, b) => a.dt - b.dt);
-    this.currentReport = forecast.current;
-    this.futureReports = forecast.hourly;
+      .sort((a, b) => a.dt - b.dt)
+      .reduce((acc: SnowReport[], report) => {
+        const hour = Math.floor(report.dt / 60 / 60 / 1000) * 60 * 60 * 1000;
+        if (acc.length === 0) {
+          acc.push({...report, dt: hour});
+        } else {
+          const lastReport = acc[acc.length - 1];
+          if (this.millisToHours(lastReport.dt) === this.millisToHours(report.dt)) {
+            acc[acc.length - 1] = {
+              dt: hour,
+              temp: Math.min(lastReport.temp, report.temp),
+              hasSnow: lastReport.hasSnow || report.hasSnow,
+              hasPrecip: lastReport.hasPrecip || report.hasPrecip,
+            };
+          } else {
+            acc.push({...report, dt: hour});
+          }
+        }
+        return acc;
+      }, []);
+
+    // save this in case we shut down
+    this.writePastReports(this.storagePath, this.pastReports);
   }
 
   private findStartAndConsecutiveSnowyHours(snowReports: SnowReport[], reverse = false): {
@@ -248,7 +346,7 @@ export default class SnowWatch {
     this.debug('this.futureReports', this.futureReports.slice(0, 10));
     const result = {
       snowingNow: isSnowingNow,
-      lastSnowTime: lastSnowHours,
+      lastSnowTime: isSnowingNow ? 0 : lastSnowHours,
       pastConsecutiveHours: pastConsecutiveHours,
       nextSnowTime: nextSnowHours,
       futureConsecutiveHours: nextConsecutiveHours,
