@@ -21,7 +21,6 @@ const dConfig: DeviceConfig = {
   hoursBeforeSnowIsSnowy: 0,
   hoursAfterSnowIsSnowy: 0,
   consecutiveHoursFutureIsSnowy: 0,
-  consecutiveHoursPastIsSnowy: 0,
 };
 
 /**
@@ -542,28 +541,21 @@ describe('SnowWatch', () => {
 
         value = watcher.snowSensorValue({
           ...dConfig,
-          hoursAfterSnowIsSnowy: 2, consecutiveHoursPastIsSnowy: 2,
+          hoursAfterSnowIsSnowy: 2,
           hoursBeforeSnowIsSnowy: 0, consecutiveHoursFutureIsSnowy: 0,
         });
         expect(value).toBe(true);
 
         value = watcher.snowSensorValue({
           ...dConfig,
-          hoursAfterSnowIsSnowy: 2, consecutiveHoursPastIsSnowy: 3,
-          hoursBeforeSnowIsSnowy: 0, consecutiveHoursFutureIsSnowy: 0,
-        });
-        expect(value).toBe(false);
-
-        value = watcher.snowSensorValue({
-          ...dConfig,
-          hoursAfterSnowIsSnowy: 0, consecutiveHoursPastIsSnowy: 0,
+          hoursAfterSnowIsSnowy: 0,
           hoursBeforeSnowIsSnowy: 2, consecutiveHoursFutureIsSnowy: 2,
         });
         expect(value).toBe(true);
 
         value = watcher.snowSensorValue({
           ...dConfig,
-          hoursAfterSnowIsSnowy: 0, consecutiveHoursPastIsSnowy: 0,
+          hoursAfterSnowIsSnowy: 0,
           hoursBeforeSnowIsSnowy: 2, consecutiveHoursFutureIsSnowy: 4,
         });
         expect(value).toBe(false);

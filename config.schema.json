@@ -132,14 +132,6 @@
               "minimum": 0,
               "maximum": 6,
               "description": "There must be this many consecutive hours of snow in the forecast to be considered 'snowy'."
-            },
-            "consecutiveHoursPastIsSnowy": {
-              "title": "Consecutive hours of past snow is 'snowy' (consecutiveHoursPastIsSnowy)",
-              "type": "integer",
-              "default": "0",
-              "minimum": 0,
-              "maximum": 6,
-              "description": "There must be this many consecutive hours of snow in the past to be considered 'snowy'."
             }
           }
         }
@@ -165,8 +157,7 @@
         "sensors[].displayName",
         "sensors[].hoursBeforeSnowIsSnowy",
         "sensors[].hoursAfterSnowIsSnowy",
-        "sensors[].consecutiveHoursFutureIsSnowy",
-        "sensors[].consecutiveHoursPastIsSnowy"
+        "sensors[].consecutiveHoursFutureIsSnowy"
       ]
     },
     {

@@ -359,8 +359,6 @@ export default class SnowWatch {
     const values = this.getSnowSenseValues();
     const enoughConsecutiveFutureHours: boolean = !values.futureConsecutiveHours
       || (values.futureConsecutiveHours >= config.consecutiveHoursFutureIsSnowy);
-    const enoughConsecutivePastHours: boolean = !values.pastConsecutiveHours
-      || (values.pastConsecutiveHours >= config.consecutiveHoursPastIsSnowy);
     const enoughHoursUntilSnow: boolean = !!values.nextSnowTime
       && (values.nextSnowTime <= config.hoursBeforeSnowIsSnowy);
     const enoughHoursSinceSnow: boolean = !!values.lastSnowTime
@@ -368,6 +366,6 @@ export default class SnowWatch {
 
     return values.snowingNow
       || (enoughHoursUntilSnow && enoughConsecutiveFutureHours)
-      || (enoughHoursSinceSnow && enoughConsecutivePastHours);
+      || enoughHoursSinceSnow;
   }
 }

@@ -40,52 +40,107 @@ Click the 'Settings' button for the plugin and enter the required information.
 
 Add the following information to your config file.
 
-**apiKey** [no default] is the *Secret Key* as assigned from [OpenWeather](https://openweathermap.org/api)
+**apiKey** [no default] is the *Secret Key* as assigned from 
+[OpenWeather](https://openweathermap.org/api)
 
-**apiVersion** [default=3.0] is the version of the API to use. If you ware new to this, then you'll want to use 3.0.
+**apiVersion** [default=3.0] is the version of the API to use. If you ware new to 
+this, then you'll want to use 3.0.
 
-**apiThrottleMinutes** [default=15] is the number of minutes to wait between API calls. This is to prevent exceeding the API call limit.
+**apiThrottleMinutes** [default=15] is the number of minutes to wait between 
+API calls. This is to prevent exceeding the API call limit.
 
-**debug** [default=false] is a flag to enable debug logging.
+**debugOn** [default=false] is a flag to enable debug logging.
 
-**location** field [no default] identifies the location for the snow checking. It can be a "city,state,country" (eg "Boston,MA,US"), or zip code (eg 02134), or "latitude,longitude" pair.
+**location** field [no default] identifies the location for the snow checking. 
+It can be a "city,state,country" (eg "Boston,MA,US"), or zip code (eg 02134), 
+or "latitude,longitude" pair.
 
-**units** [default='imperial'] (values 'metric' or 'imperial') is the units defined in [OpenWeather Docs](https://openweathermap.org/api/one-call-api). Basically, 'imperial' is Fahrenheit and 'metric' is Celcius. 
+**units** [default='imperial'] (values 'metric' or 'imperial') is the units 
+defined in [OpenWeather Docs](https://openweathermap.org/api/one-call-api). 
+Basically, 'imperial' is Fahrenheit and 'metric' is Celcius. 
 
-**hoursBeforeSnowIsSnowy** field [default=3] is number of **hours** before snow starts that the occupancy should go **on**.
+**sensors** field [no default] is an array of sensors to create. Each sensor
+has the following fields:
 
-**hoursAfterSnowIsSnowy** field [default=3] is number of **hours** after snow is last seen that the occupancy should go **off**.
+**displayName** field [no default] is the name you will see in the *Home* app for
+this sensor.
+
+**hoursBeforeSnowIsSnowy** field [default=3] is number of **hours** before 
+snow starts that the occupancy should go **on**. In other words, if the forecast
+says it's going to snow in 3 hours or less, then the sensor turns on.
+
+**hoursAfterSnowIsSnowy** field [default=3] is number of **hours** after 
+snow is last seen that the occupancy should go **off**. In other words, if the
+the last time the current weather said it was snowing 3 or more hours ago, then
+the sensor turns off.
+
+**consecutiveHoursFutureIsSnowy** field [default=0] is number of consecutive
+**hours** of snow after it starts should trigger the sensor. In other words, if
+this is set to two and the forecast says it starts snowing in one hour and it will 
+also be snowing in two hours, then the sensor turns on.
 
 Here's what the config might look like inside the `platforms` section.
 
 ```
-{
-    "platform": "SnowSense"
-    "name": "Snow Sense",
-    "apiKey": "**** get your key from OpenWeather ****",
-    "apiVersion": 3.0,
-    "apiThrottleMinutes": 15,
-    "debug": false,
-    "units": "imperial",
-    "location": "Boston,ma,us",
-    "hoursBeforeSnowIsSnowy": 3,
-    "hoursAfterSnowIsSnowy": 3
-}
+        {
+            "platform": "SnowSense",
+            "name": "SnowSense",
+            "apiKey": "**** get your key from OpenWeather ****",
+            "apiVersion": "3.0",
+            "debugOn": true,
+            "apiThrottleMinutes": 15,
+            "units": "imperial",
+            "location": "Newton,ma,us",
+            "onlyWhenCold": false,
+            "coldTemperatureThreshold": 32,
+            "sensors": [
+                {
+                    "displayName": "Snowing Now",
+                    "hoursBeforeSnowIsSnowy": 0,
+                    "hoursAfterSnowIsSnowy": 0,
+                    "consecutiveHoursFutureIsSnowy": 0
+                },
+                {
+                    "displayName": "Is Snowy",
+                    "hoursBeforeSnowIsSnowy": 3,
+                    "hoursAfterSnowIsSnowy": 3,
+                    "consecutiveHoursFutureIsSnowy": 0
+                }
+            ]
+        }
+
 ```
 
 ## Why this exists
 
-I created this for a specific use case, which is to turn on and off snow melting mats outside my house.
+I created this for a specific use case, which is to turn on and off snow melting 
+mats outside my house.
 
-I have been happy with [HeatTrak](https://heattrak.com/) Snow Melting Mats and when I purchased wireless outlets for them, I liked them even more. So, on one snowy weekend I decided to take the automation to the next level and build this plug-in.
+I have been happy with [HeatTrak](https://heattrak.com/) Snow Melting Mats 
+and when I purchased wireless outlets for them, I liked them even more. 
+So, on one snowy weekend I decided to take the automation to the next level 
+and build this plug-in.
 
-Now, if the local forecast expects snow in the next few hours, the Snow Melting Mats will turn on, and when the snow stops falling, they Mats will turn off a few hours later.
+Now, if the local forecast expects snow in the next few hours, the snow 
+melting mats will turn on, and when the snow stops falling, the mats will 
+turn off a few hours later.
 
-I bought a set of [Etekcity](https://www.amazon.com/gp/product/B074GVPYPY) outlets and installed [homebridge](https://github.com/nfarina/homebridge) and [homebridge-vesync](https://www.npmjs.com/package/homebridge-vesync) to control them from the my Apple-centric home using HomeKit.
+I bought a set of [Etekcity](https://www.amazon.com/gp/product/B074GVPYPY) outlets
+and installed [homebridge](https://github.com/nfarina/homebridge) and 
+[homebridge-vesync](https://www.npmjs.com/package/homebridge-vesync) to control 
+them from the my Apple-centric home using HomeKit.
 
-To make them work with [HomeKit](https://www.apple.com/ios/home/), I needed to get [homebridge](https://www.npmjs.com/package/homebridge) working. I had an old [Raspberry Pi](https://www.raspberrypi.org/) sitting around so I [installed it there](https://github.com/nfarina/homebridge/wiki/Running-HomeBridge-on-a-Raspberry-Pi) and put the device in a closet with the rest of my network gear. 
+To make them work with [HomeKit](https://www.apple.com/ios/home/), I needed 
+to get [homebridge](https://www.npmjs.com/package/homebridge) working. I 
+had an old [Raspberry Pi](https://www.raspberrypi.org/) sitting around so 
+I [installed it there](https://github.com/nfarina/homebridge/wiki/Running-HomeBridge-on-a-Raspberry-Pi) 
+and put the device in a closet with the rest of my network gear. 
 
-This should work pretty well with any switches you can get working with [HomeKit](https://www.apple.com/ios/home/), and if you can also get a [homebridge](https://www.npmjs.com/package/homebridge) setup working and a [OpenWeather](https://openweathermap.org/api) API key, then the HomeKit App end of this is pretty trivial. 
+This should work pretty well with any switches you can get working with 
+[HomeKit](https://www.apple.com/ios/home/), and if you can also get 
+a [homebridge](https://www.npmjs.com/package/homebridge) setup working 
+and a [OpenWeather](https://openweathermap.org/api) API key, then the HomeKit 
+App end of this is pretty trivial. 
 
 ## How to set up the automation
 
@@ -100,7 +155,8 @@ This should work pretty well with any switches you can get working with [HomeKit
 
 ## Development notes
 
-The latest version of this plugin was build following information from [Homebridge Plugin Development](https://developers.homebridge.io/#/) 
+The latest version of this plugin was build following information from 
+[Homebridge Plugin Development](https://developers.homebridge.io/#/) 
 and the example 
 [Homebridge Platform Plugin Template](https://github.com/homebridge/homebridge-plugin-template)
 and several other plugins around github.
@@ -128,9 +184,16 @@ npm version patch
 npm publish
 ```
 
+## Reporting Issues and Suggestions
+
+Please use the [GitHub Issue Tracker](https://github.com/bbernstein/homebridge-snowsense/issues)
+to submit reports of issues or suggestions for improvements.
+
 ## Thanks
 
-* Thanks to @apollo316 on github for pointing out that the DarkSky api is going away and @nicoryan and others for recommending OpenWeather.
-* Thanks to @rmkjr for suggeting moving from a Switch to an Occupancy Sensor.
+* Thanks to @apollo316 on github for pointing out that the DarkSky api is going 
+away and @nicoryan and others for recommending OpenWeather.
+* Thanks to @rmkjr for suggesting moving from a Switch to an Occupancy Sensor.
 * Thanks to @scoutbeer for detailed feedback and help testing v2.0.
-
+* Thanks to @nvogt for suggesting temperature and consecutive hour options.
+* Thanks to you for checking it out.
