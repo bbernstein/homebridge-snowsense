@@ -254,6 +254,18 @@ export default class SnowWatch {
     this.addPastReport(forecast.current);
     this.currentReport = forecast.current;
     this.futureReports = forecast.hourly;
+
+    // The rest of this is all for debug logging
+    const now = new Date().getTime();
+    const reports = [
+      ...this.pastReports.filter((report) => now - report.dt <= 1000 * 60 * 60 * 6),
+      this.currentReport as SnowReport,
+      ...this.futureReports.filter((report) => report.dt >= now && report.dt - now <= 1000 * 60 * 60 * 6),
+    ];
+    this.debug('reports', this.reportHoursToString(reports));
+
+    const values = this.getSnowSenseValues();
+    this.debug('values', values);
   }
 
   private millisToHours(millis: number): number {
@@ -332,27 +344,45 @@ export default class SnowWatch {
     };
   }
 
+  private reportToString(timeMillis: number, report: SnowReport): string[] {
+    const diff = Math.round((report.dt - timeMillis) / 60 / 60) / 1000;
+    return [`${diff}`, `${this.isSnowyEnough(report) ? 'SNOW' : 'nosnow'}`];
+  }
+
+  private reportHoursToString(reports: SnowReport[]): string {
+    const now = new Date().getTime();
+    const header = ['∆Hour', 'Snow'];
+    const data = [header, ...reports.map((report) => this.reportToString(now, report))];
+
+    const columnWidths = data[0].map((_, index) =>
+      Math.max(...data.map(row => row[index].length)),
+    );
+
+    const formattedData = data.map(row =>
+      row.map((item, index) => item.padEnd(columnWidths[index])).join(' '),
+    );
+    return '\n' + formattedData.join('\n');
+  }
+
   public getSnowSenseValues(): SnowWatchValues {
     // is it snowing now?
     const isSnowingNow = this.currentReport ? this.isSnowyEnough(this.currentReport) : false;
 
+    // once it starts, how many consecutive hours is expected?
     const {consecutiveHours: nextConsecutiveHours, hoursUntilStart: nextSnowHours} =
       this.findStartAndConsecutiveSnowyHours(this.futureReports);
+
+    // last time it snowed, how many consecutive hours did it snow?
     const {consecutiveHours: pastConsecutiveHours, hoursUntilStart: lastSnowHours} =
       this.findStartAndConsecutiveSnowyHours(this.pastReports, true);
 
-    this.debug('this.currentReport', this.currentReport);
-    this.debug('this.pastReports', this.pastReports);
-    this.debug('this.futureReports', this.futureReports.slice(0, 10));
-    const result = {
+    return {
       snowingNow: isSnowingNow,
       lastSnowTime: isSnowingNow ? 0 : lastSnowHours,
       pastConsecutiveHours: pastConsecutiveHours,
       nextSnowTime: nextSnowHours,
       futureConsecutiveHours: nextConsecutiveHours,
     };
-    this.debug('result', result);
-    return result;
   }
 
   public snowSensorValue(config: DeviceConfig): boolean {
@@ -364,8 +394,10 @@ export default class SnowWatch {
     const enoughHoursSinceSnow: boolean = !!values.lastSnowTime
       && (values.lastSnowTime <= config.hoursAfterSnowIsSnowy);
 
-    return values.snowingNow
+    const result = values.snowingNow
       || (enoughHoursUntilSnow && enoughConsecutiveFutureHours)
       || enoughHoursSinceSnow;
+    this.debug(`result for ${config.displayName}`, result);
+    return result;
   }
 }
