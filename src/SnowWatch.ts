@@ -346,7 +346,7 @@ export default class SnowWatch {
 
   private reportToString(timeMillis: number, report: SnowReport): string[] {
     const diff = Math.round((report.dt - timeMillis) / 60 / 60) / 1000;
-    return [`${diff}`, `${this.isSnowyEnough(report) ? 'SNOW' : 'nosnow'}`];
+    return [`${diff}`, `${this.isSnowyEnough(report) ? 'SNOW' : 'no'}`];
   }
 
   private reportHoursToString(reports: SnowReport[]): string {
@@ -355,7 +355,7 @@ export default class SnowWatch {
     const data = [header, ...reports.map((report) => this.reportToString(now, report))];
 
     const columnWidths = data[0].map((_, index) =>
-      Math.max(...data.map(row => row[index].length)),
+      Math.max(...data.map(row => row[index].length + 1)),
     );
 
     const formattedData = data.map(row =>
