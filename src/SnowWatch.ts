@@ -353,7 +353,6 @@ export default class SnowWatch {
     const now = new Date().getTime();
     const header = ['∆Hour', 'Snow'];
     const data = [header, ...reports.map((report) => this.reportToString(now, report))];
-
     const columnWidths = data[0].map((_, index) =>
       Math.max(...data.map(row => row[index].length + 1)),
     );
