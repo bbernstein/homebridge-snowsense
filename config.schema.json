@@ -83,30 +83,6 @@
         "default": "New York,NY,US",
         "description": "Location is &lt;city>,&lt;state>,&lt;country code> or 5-digit zip code or &lt;latitude>,&lt;longitude>"
       },
-      "hoursBeforeSnowIsSnowy": {
-        "title": "Hours before snow starts to trigger 'snowy' (hoursBeforeSnowIsSnowy)",
-        "type": "integer",
-        "default": "3",
-        "minimum": 0,
-        "maximum": 6,
-        "description": "If snow is forecasted within the next x hours, it's considered snowy."
-      },
-      "hoursAfterSnowIsSnowy": {
-        "title": "Hours after snow ends to turn off 'snowy' (hoursAfterSnowIsSnowy)",
-        "type": "integer",
-        "default": "3",
-        "minimum": 0,
-        "maximum": 6,
-        "description": "If snow was seen in the past x hours, it's considered snowy."
-      },
-      "consecutiveHoursOfSnowIsSnowy": {
-        "title": "Consecutive hours of predicted snow is 'snowy' (consecutiveHoursOfSnowIsSnowy)",
-        "type": "integer",
-        "default": "0",
-        "minimum": 0,
-        "maximum": 6,
-        "description": "There must be this many consecutive hours of snow in the forecast to be considered 'snowy'."
-      },
       "onlyWhenCold": {
         "title": "Only trigger when it is colder than a threshold (onlyWhenCold)",
         "type": "boolean",
@@ -120,6 +96,45 @@
         "minimum": -20,
         "maximum": 50,
         "description": "Only relevant when \"Only When Cold\" is turned on. Trigger when it's colder than this temperature. In the given units."
+      },
+      "sensors": {
+        "type": "array",
+        "items": {
+          "title": "Sensors",
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "title": "Name",
+              "type": "string",
+              "placeholder": "Enter sensor name...",
+              "required": true
+            },
+            "hoursBeforeSnowIsSnowy": {
+              "title": "Hours before snow starts to trigger 'snowy' (hoursBeforeSnowIsSnowy)",
+              "type": "integer",
+              "default": "3",
+              "minimum": 0,
+              "maximum": 6,
+              "description": "If snow is forecasted within the next x hours, it's considered snowy."
+            },
+            "hoursAfterSnowIsSnowy": {
+              "title": "Hours after snow ends to turn off 'snowy' (hoursAfterSnowIsSnowy)",
+              "type": "integer",
+              "default": "3",
+              "minimum": 0,
+              "maximum": 6,
+              "description": "If snow was seen in the past x hours, it's considered snowy."
+            },
+            "consecutiveHoursFutureIsSnowy": {
+              "title": "Consecutive hours of predicted snow is 'snowy' (consecutiveHoursFutureIsSnowy)",
+              "type": "integer",
+              "default": "0",
+              "minimum": 0,
+              "maximum": 6,
+              "description": "There must be this many consecutive hours of snow in the forecast to be considered 'snowy'."
+            }
+          }
+        }
       }
     }
   },
@@ -134,15 +149,24 @@
       ]
     },
     {
+      "key": "sensors",
+      "type": "array",
+      "orderable": false,
+      "buttonText": "Add Sensor",
+      "items": [
+        "sensors[].displayName",
+        "sensors[].hoursBeforeSnowIsSnowy",
+        "sensors[].hoursAfterSnowIsSnowy",
+        "sensors[].consecutiveHoursFutureIsSnowy"
+      ]
+    },
+    {
       "type": "fieldset",
       "title": "Time Settings",
       "description": "These settings about timing of events.",
       "expandable": true,
       "items": [
-        "hoursBeforeSnowIsSnowy",
-        "hoursAfterSnowIsSnowy",
-        "apiThrottleMinutes",
-        "consecutiveHoursOfSnowIsSnowy"
+        "apiThrottleMinutes"
       ]
     },
     {
