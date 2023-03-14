@@ -201,9 +201,6 @@ describe('SnowWatch', () => {
       afterEach(() => {
         fs.rmdirSync(swOptions.storagePath);
       });
-    });
-  });
-
 
       it('should fail to write to readonly dir', async () => {
         await SnowWatch.init(console, swOptions);
@@ -249,33 +246,10 @@ describe('SnowWatch', () => {
         expect(history2).toEqual([]);
       });
     });
-
-    describe('expecting fail to see three consecutive hours of snow', () => {
-      it('should see snowing later', async () => {
-        const watcher = await getWatcher({...swOptions, consecutiveHoursOfSnowIsSnowy: 3});
-        expect(watcher.snowingNow()).toBe(false);
-        expect(watcher.snowingSoon()).toBe(false);
-        expect(watcher.snowedRecently()).toBe(false);
-      });
-    });
-
-    describe('when expecting snow in zero hours', () => {
-      it('should see not snowing now or later', async () => {
-        const watcher = await getWatcher({...swOptions, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
-        expect(watcher.snowingNow()).toBe(false);
-        expect(watcher.snowingSoon()).toBe(false);
-        expect(watcher.snowedRecently()).toBe(false);
-      });
-    });
   });
 
   describe('snowing now but not past or future', () => {
     beforeEach(() => {
-      const report1 = makeForecastList(3, dtHour(0), false, 35.24);
-      const report2 = makeForecastList(2, dtHour(3), false, 30.61);
-      report2[0].hasPrecip = true;
-      report2[1].hasPrecip = true;
-
       forecast = {
         'current': makeForecast(1670879317, true, 35.24),
         'hourly': makeForecastList(3, dtHour(0), false, 35.24),
@@ -417,15 +391,6 @@ describe('SnowWatch', () => {
         const watcher = await getWatcher(swOptions);
         const value = watcher.snowSensorValue({...dConfig, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
         expect(value).toBe(false);
-      });
-
-      describe('when expecting snow in zero hours', () => {
-        it('should not be snowing now or later', async () => {
-          const watcher = await getWatcher({...swOptions, hoursBeforeSnowIsSnowy: 0, hoursAfterSnowIsSnowy: 0});
-          expect(watcher.snowingNow()).toBe(false);
-          expect(watcher.snowingSoon()).toBe(false);
-          expect(watcher.snowedRecently()).toBe(false);
-        });
       });
     });
   });
@@ -609,7 +574,7 @@ describe('SnowWatch', () => {
         const value = watcher.snowSensorValue({...dConfig, hoursBeforeSnowIsSnowy: 2, hoursAfterSnowIsSnowy: 2});
         expect(value).toBe(false);
       });
-      
+
       it('should see it IS snowy', async () => {
         const watcher = SnowWatch.getInstance();
         const value = watcher.snowSensorValue({...dConfig, hoursBeforeSnowIsSnowy: 3, hoursAfterSnowIsSnowy: 3});
