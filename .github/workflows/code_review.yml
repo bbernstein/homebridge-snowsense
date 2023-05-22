@@ -7,7 +7,7 @@ on:
 jobs:
   code-review:
     runs-on: ubuntu-latest
-    if: github.event.comment.user.login == 'bbernstein' && startsWith(github.event.comment.body, 'chatgpt')
+    if: startsWith(github.event.comment.body, 'chatgpt')
     steps:
       - name: OpenAI ChatGPT Code Review
         uses: adshao/chatgpt-code-review-action@v0.2
