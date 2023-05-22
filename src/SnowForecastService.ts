@@ -240,8 +240,8 @@ export default class SnowForecastService {
         this.weatherCache = this.adjustForOpenWeatherMap(forecast);
 
         // make one-liner output for debugging
-        const hours = this.weatherCache.hourly.slice(0, 4).map(h => h.hasSnow).join(',');
-        this.debug(`Now and next 3 hours: ${hours}`);
+        const hours = this.weatherCache.hourly.slice(0, 7).map(h => h.hasSnow).join(',');
+        this.debug(`Now and next 6 hours: ${hours}`);
 
         this.latestWeatherTime = now;
       }
