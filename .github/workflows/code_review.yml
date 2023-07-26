@@ -1,18 +1,21 @@
-name: Code Review
+name: AI Code Reviewer
 
 on:
-  issue_comment:
-    types: [created, edited]
-
+  pull_request:
+    types:
+      - opened
+      - synchronize
+permissions: write-all
 jobs:
-  code-review:
+  review:
     runs-on: ubuntu-latest
     steps:
-      - name: OpenAI ChatGPT Code Review
-        uses: adshao/chatgpt-code-review-action@v0.2
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: AI Code Reviewer
+        uses: your-username/ai-code-reviewer@main
         with:
-          PROGRAMMING_LANGUAGE: 'JavaScript'
-          OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          FULL_REVIEW_COMMENT: 'chatgpt'
-          REVIEW_COMMENT_PREFIX: 'chatgpt:'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_TOKEN }}
+          exclude: "**/*.json, **/*.md" # Optional: exclude patterns separated by commas
