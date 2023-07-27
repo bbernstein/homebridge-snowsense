@@ -68,6 +68,11 @@ export default class SnowForecastService {
   public latLon?: { lat: number; lon: number };
   private lockTimeoutMillis = 2000;
 
+  /**
+   * Create a new instance of the SnowForecastService
+   * @param log
+   * @param options
+   */
   constructor(log: Logger, options: SnowForecastOptions) {
     this.logger = log;
     this.fetchLock = false;
