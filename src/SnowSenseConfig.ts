@@ -34,11 +34,6 @@ export interface SnowSenseConfig extends PlatformConfig {
 }
 
 
-/**
- * Deeply compare two objects
- * @param obj1
- * @param obj2
- */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deepEqual(obj1: any, obj2: any): boolean {
   // Check if the objects are arrays
@@ -80,12 +75,6 @@ function deepEqual(obj1: any, obj2: any): boolean {
   return true;
 }
 
-/**
- * Upgrade the config to the latest version
- * @param config
- * @param configPath
- * @param logger
- */
 export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logger: Logger) {
   let configChanged = false;
   // read legacy configs, and see if anything changed
