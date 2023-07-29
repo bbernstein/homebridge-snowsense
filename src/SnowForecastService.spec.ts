@@ -16,6 +16,9 @@ const weather = {
   ],
 };
 
+/**
+ * This is the data that comes back from the zip code API
+ */
 const zipToLocationData = {
   zip: '02461',
   name: 'Newton',

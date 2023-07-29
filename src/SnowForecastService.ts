@@ -53,6 +53,9 @@ export type SnowForecastOptions = {
   location?: string;
 };
 
+/**
+ * Service to get weather information from openweathermap.org
+ */
 export default class SnowForecastService {
   private readonly apiKey: string = '';
   private readonly apiVersion: string = '2.5';

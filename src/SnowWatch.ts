@@ -6,6 +6,9 @@ import path from 'path';
 
 export const HISTORY_FILE = 'snowsense-history.json';
 
+/**
+ * Options for SnowWatch
+ */
 export type SnowWatchOptions = {
   /**
    * Get an api key from https://openweathermap.org/api
@@ -58,6 +61,9 @@ export type SnowWatchOptions = {
   storagePath: string;
 };
 
+/**
+ * Values that are returned from SnowWatch
+ */
 interface SnowWatchValues {
   snowingNow: boolean;
   lastSnowTime?: number;
@@ -66,6 +72,9 @@ interface SnowWatchValues {
   futureConsecutiveHours: number;
 }
 
+/**
+ *
+ */
 export default class SnowWatch {
   private static instance: SnowWatch;
   private apiKey?: string;
