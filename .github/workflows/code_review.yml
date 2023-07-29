@@ -14,9 +14,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: AI Code Reviewer
-        uses: adshao/chatgpt-code-review-action@main
+        uses: cirolini/chatgpt-github-actions@v1.3
         with:
-          OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          REVIEW_COMMENT_PREFIX: 'chatgpt:'
-          FULL_REVIEW_COMMENT: 'chatgpt'
+          openai_api_key: ${{ secrets.OPENAI_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN }}
+          github_pr_id: ${{ github.event.number }}
+          openai_engine: "text-davinci-002"
+          openai_temperature: 0.5
+          openai_max_tokens: 2048
+          mode: file
