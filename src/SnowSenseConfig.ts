@@ -2,9 +2,6 @@ import {PlatformConfig} from 'homebridge/lib/bridgeService';
 import {readFileSync, writeFileSync} from 'fs';
 import {Logger} from 'homebridge';
 
-/**
- * Config for a single device
- */
 export interface DeviceConfig {
   displayName: string;
   hoursBeforeSnowIsSnowy: number;
@@ -12,9 +9,6 @@ export interface DeviceConfig {
   consecutiveHoursFutureIsSnowy: number;
 }
 
-/**
- * Config for the platform
- */
 export interface SnowSenseConfig extends PlatformConfig {
   apiKey: string;
   apiVersion: string;
