@@ -132,7 +132,12 @@ export default class SnowForecastService {
    * @private
    */
   private async getLocationFromZip(zip: string): Promise<{ lat: number; lon: number }> {
+    // If the location is a zip code, use the OpenWeatherMap API to convert it
     this.debug(`Converting zip code ${zip} to latitude-longitude pair`);
+
+    // TODO: do something here?
+
+
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
     const response = await axios.get(geocodingApiUrl);
