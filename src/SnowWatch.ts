@@ -1,6 +1,6 @@
 import {Logger} from 'homebridge';
 import SnowForecastService, {SnowForecast, SnowReport} from './SnowForecastService';
-import {DeviceConfig} from './SnowSenseConfig';
+import {DeviceConfig, SnowSenseUnits} from './SnowSenseConfig';
 import fs from 'fs';
 import path from 'path';
 
@@ -26,7 +26,7 @@ export type SnowWatchOptions = {
   /**
    * Units to request from weather api
    */
-  units?: 'imperial' | 'metric' | 'standard';
+  units?: SnowSenseUnits;
 
   /**
    * Location to request from weather api
@@ -77,7 +77,7 @@ export default class SnowWatch {
   private readonly logger: Logger;
   private readonly onlyWhenCold: boolean;
   private readonly coldTemperatureThreshold?: number;
-  private pastReports: SnowReport[] = [];
+  public pastReports: SnowReport[] = [];
   private storagePath: string;
   private currentReport?: SnowReport;
   private futureReports: SnowReport[] = [];
@@ -91,7 +91,7 @@ export default class SnowWatch {
     this.coldTemperatureThreshold = options.coldTemperatureThreshold;
     this.logger = log;
     this.storagePath = options.storagePath;
-    this.pastReports = options.storagePath ? this.readPastReports(options.storagePath) : [];
+    this.pastReports = this.readPastReports(options.storagePath);
     this.snowForecastService = new SnowForecastService(this.logger,
       {
         apiKey: options.apiKey,
@@ -116,6 +116,9 @@ export default class SnowWatch {
   }
 
   private readPastReports(storagePath: string): SnowReport[] {
+    if (!storagePath) {
+      return [];
+    }
     const filePath = path.join(storagePath, HISTORY_FILE);
     try {
       if (fs.existsSync(filePath)) {

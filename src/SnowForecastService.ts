@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {Logger} from 'homebridge';
+import { SnowSenseUnits } from './SnowSenseConfig';
 
 /**
  * A single snapshot of data needed to determine if it might be snowing
@@ -41,7 +42,7 @@ export type SnowForecastOptions = {
   /**
    * Units to request from weather api
    */
-  units?: 'imperial' | 'metric' | 'standard';
+  units?: SnowSenseUnits;
 
   /**
    * Location to request from weather api

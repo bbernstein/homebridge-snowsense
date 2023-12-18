@@ -3,6 +3,8 @@ import SnowForecastService, {SnowForecast, SnowReport} from './SnowForecastServi
 import {DeviceConfig} from './SnowSenseConfig';
 import fs from 'fs';
 import path from 'path';
+import {Logger} from 'homebridge';
+
 
 // template options for default values, if not provided
 const swOptions: SnowWatchOptions = {
@@ -79,8 +81,21 @@ const dtHour = (hourNum: number) => {
   return startDt + (hourNum * 3600);
 };
 
+const debug = false;
+const consoleInfo = jest.fn((...args) => debug ? console.info(...args) : undefined);
+const consoleWarn = jest.fn((...args) => debug ? console.warn(...args) : undefined);
+const consoleError = jest.fn((...args) => debug ? console.error(...args) : undefined);
+const consoleDebug = jest.fn((...args) => debug ? console.debug(...args) : undefined);
+const logger: Logger = {
+  info: consoleInfo,
+  warn: consoleWarn,
+  error: consoleError,
+  debug: consoleDebug,
+  log: jest.fn(),
+};
+
 const getWatcher = async (options: SnowWatchOptions) => {
-  await SnowWatch.init(console, options);
+  await SnowWatch.init(logger, options);
   const watcher = SnowWatch.getInstance();
   await watcher.updatePredictionStatus();
   return watcher;
@@ -97,6 +112,7 @@ describe('SnowWatch', () => {
   afterEach(() => {
     deleteTestData();
     jest.restoreAllMocks();
+    consoleError.mockClear();
   });
 
   describe('when we can not get SnowWatch instance', () => {
@@ -104,8 +120,15 @@ describe('SnowWatch', () => {
       expect(SnowWatch.getInstance).toThrow('SnowWatch not initialized');
     });
 
+    it('should set pastReports to an empty array when storagePath is undefined', () => {
+      const options = {...swOptions, storagePath: ''};
+      SnowWatch.init(logger, options);
+      const watcher = SnowWatch.getInstance();
+      expect(watcher.pastReports).toEqual([]);
+    });
+
     it('should get instance, but no forecast', () => {
-      SnowWatch.init(console, swOptions);
+      SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       expect(watcher).toBeDefined();
       expect(watcher.latestForecast).toBeUndefined();
@@ -122,7 +145,7 @@ describe('SnowWatch', () => {
       jest.spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
 
-      await SnowWatch.init(console, swOptions);
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       await watcher.updatePredictionStatus();
       expect(watcher.latestForecast).toBeDefined();
@@ -137,9 +160,10 @@ describe('SnowWatch', () => {
       jest.spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
         .mockResolvedValueOnce(null);
 
-      await SnowWatch.init(console, swOptions);
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       await watcher.updatePredictionStatus();
+      expect(logger.error).toHaveBeenCalledWith('No forecast available');
       expect(watcher.latestForecast).toBeNull();
     });
   });
@@ -148,20 +172,20 @@ describe('SnowWatch', () => {
     it('should read an empty history', async () => {
       // use the above forecast mock
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await SnowWatch.init(console, swOptions);
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       const watcherProto = Object.getPrototypeOf(watcher);
-      watcherProto.logger = console;
+      watcherProto.logger = logger;
       watcherProto.storagePath = swOptions.storagePath;
       const history = watcherProto.readPastReports(swOptions.storagePath);
       expect(history).toHaveLength(0);
     });
 
     it('should write and read reports', async () => {
-      await SnowWatch.init(console, swOptions);
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       const watcherProto = Object.getPrototypeOf(watcher);
-      watcherProto.logger = console;
+      watcherProto.logger = logger;
       watcherProto.storagePath = swOptions.storagePath;
       const report = [makeForecast(1670879317, false, 35.24)];
       watcherProto.writePastReports(swOptions.storagePath, report);
@@ -170,26 +194,28 @@ describe('SnowWatch', () => {
     });
 
     it('should fail to read history with non-array', async () => {
-      await SnowWatch.init(console, swOptions);
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       const watcherProto = Object.getPrototypeOf(watcher);
-      watcherProto.logger = console;
+      watcherProto.logger = logger;
       watcherProto.storagePath = swOptions.storagePath;
       const report = 'this is not a json file';
       watcherProto.writePastReports(swOptions.storagePath, report);
       const history2 = watcherProto.readPastReports(swOptions.storagePath);
+      expect(logger.error).toHaveBeenCalledWith('Expected array, got string');
       expect(history2).toEqual([]);
     });
 
     it('should fail to read history with bad object', async () => {
-      await SnowWatch.init(console, swOptions);
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       const watcherProto = Object.getPrototypeOf(watcher);
-      watcherProto.logger = console;
+      watcherProto.logger = logger;
       watcherProto.storagePath = swOptions.storagePath;
       const report = [{a: 10, b: 'hi there', c: 'wrong type'}];
       watcherProto.writePastReports(swOptions.storagePath, report);
       const history2 = watcherProto.readPastReports(swOptions.storagePath);
+      expect(logger.error).toHaveBeenCalledWith('Expected SnowReport, got [object Object]');
       expect(history2).toEqual([]);
     });
 
@@ -203,14 +229,28 @@ describe('SnowWatch', () => {
       });
 
       it('should fail to write to readonly dir', async () => {
-        await SnowWatch.init(console, swOptions);
+        await SnowWatch.init(logger, swOptions);
         const watcher = SnowWatch.getInstance();
         const watcherProto = Object.getPrototypeOf(watcher);
-        watcherProto.logger = console;
+        watcherProto.logger = logger;
         watcherProto.storagePath = filePath;
         const report = [makeForecast(1670879317, false, 35.24)];
         watcherProto.writePastReports(watcherProto.storagePath, report);
         const history2 = watcherProto.readPastReports(swOptions.storagePath);
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.stringMatching(/Error writing past reports to/),
+          expect.anything(),
+        );
+        expect((logger.error as jest.Mock).mock.calls).toEqual(
+          expect.arrayContaining([
+            expect.arrayContaining([
+              expect.anything(),
+              expect.objectContaining({
+                message: expect.stringMatching(/EACCES: permission denied, mkdir/),
+              }),
+            ]),
+          ]),
+        );
         expect(history2).toEqual([]);
       });
     });
@@ -218,33 +258,56 @@ describe('SnowWatch', () => {
     describe('handle readonly file', () => {
       const filePath = path.join(swOptions.storagePath, HISTORY_FILE);
       it('should fail to write to readonly dir', async () => {
-        await SnowWatch.init(console, swOptions);
+        await SnowWatch.init(logger, swOptions);
         fs.mkdirSync(swOptions.storagePath, {mode: 0o777});
         fs.writeFileSync(filePath, 'hi there', {mode: 0o444});
         const watcher = SnowWatch.getInstance();
         const watcherProto = Object.getPrototypeOf(watcher);
-        watcherProto.logger = console;
+        watcherProto.logger = logger;
         watcherProto.storagePath = swOptions.storagePath;
         const report = [makeForecast(1670879317, false, 35.24)];
         watcherProto.writePastReports(watcherProto.storagePath, report);
         const history2 = watcherProto.readPastReports(swOptions.storagePath);
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.stringMatching(/Error writing past reports to/),
+          expect.anything(),
+        );
+        expect((logger.error as jest.Mock).mock.calls).toEqual(
+          expect.arrayContaining([
+            expect.arrayContaining([
+              expect.anything(),
+              expect.objectContaining({
+                message: expect.stringMatching(/EACCES: permission denied, open/),
+              }),
+            ]),
+          ]),
+        );
         expect(history2).toEqual([]);
       });
     });
 
     describe('handle unreadable file', () => {
-      const filePath = path.join(swOptions.storagePath, HISTORY_FILE);
+      const filePath = path.join(swOptions.storagePath!, HISTORY_FILE);
       it('should fail to write to readonly dir', async () => {
-        fs.mkdirSync(swOptions.storagePath, {mode: 0o777});
+        fs.mkdirSync(swOptions.storagePath!, {mode: 0o777});
         fs.writeFileSync(filePath, 'hi there', {mode: 0o000});
-        await SnowWatch.init(console, swOptions);
+        await SnowWatch.init(logger, swOptions);
         const watcher = SnowWatch.getInstance();
         const watcherProto = Object.getPrototypeOf(watcher);
-        watcherProto.logger = console;
+        watcherProto.logger = logger;
         watcherProto.storagePath = swOptions.storagePath;
         const history2 = watcherProto.readPastReports(swOptions.storagePath);
         expect(history2).toEqual([]);
       });
+    });
+  });
+
+  describe('handle null/empty currentReport', () => {
+    it('getSnowSenseValues should return isSnowingNow as false when currentReport is undefined', () => {
+      const watcher = SnowWatch.getInstance();
+      (watcher as any).currentReport = undefined;
+      const values = watcher.getSnowSenseValues();
+      expect(values.snowingNow).toBe(false);
     });
   });
 
@@ -444,7 +507,7 @@ describe('SnowWatch', () => {
 
     describe('snowing now but not past or future', () => {
       beforeEach(async () => {
-        await SnowWatch.init(console, swOptions);
+        await SnowWatch.init(logger, swOptions);
         const watcher = SnowWatch.getInstance();
         await setupPastMocks(watcher, [[false, false], [false, false], [false, false], [false, false]]);
 
@@ -488,7 +551,7 @@ describe('SnowWatch', () => {
 
     describe('it snowed, stopped, then will snow again', () => {
       beforeEach(async () => {
-        await SnowWatch.init(console, swOptions);
+        await SnowWatch.init(logger, swOptions);
         const watcher = SnowWatch.getInstance();
         await setupPastMocks(watcher, [[false, false], [true, false], [true, false], [false, false]]);
 
@@ -564,7 +627,7 @@ describe('SnowWatch', () => {
 
     describe('it stopped snowing a little over two hours ago', () => {
       beforeEach(async () => {
-        await SnowWatch.init(console, swOptions);
+        await SnowWatch.init(logger, swOptions);
         const watcher = SnowWatch.getInstance();
         await setupPastMocks(watcher, [[true, false], [true, false], [false, false], [false, false]]);
       });
@@ -604,13 +667,13 @@ describe('SnowWatch', () => {
       jest.restoreAllMocks();
     });
 
-    it('should output to console.debug', async () => {
-      await SnowWatch.init(console, swOptions);
+    it('should output to logger.debug', async () => {
+      await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
-      const spy = jest.spyOn(console, 'debug');
+      const spy = jest.spyOn(logger, 'debug');
       const watcherProto = Object.getPrototypeOf(watcher);
       watcherProto.debugOn = true;
-      watcherProto.logger = console;
+      watcherProto.logger = logger;
       watcherProto.debug('test');
       expect(spy).toHaveBeenCalled();
     });

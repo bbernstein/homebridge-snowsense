@@ -17,9 +17,9 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
   // this is used to track restored cached accessories
   public accessories: PlatformAccessory[] = [];
-  private snowyAccessories: IsSnowyAccessory[] = [];
-  private readonly forecastFrequencyMillis = 1000 * 60 * 5;
-  private readonly debugOn: boolean = false;
+  public snowyAccessories: IsSnowyAccessory[] = [];
+  public readonly forecastFrequencyMillis = 1000 * 60 * 5;
+  public readonly debugOn: boolean = false;
 
   constructor(
     public readonly log: Logger,
@@ -114,6 +114,10 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     this.accessories.push(accessory);
   }
 
+  addNewSnowyAccessory(accessory: PlatformAccessory) {
+    this.snowyAccessories.push(new IsSnowyAccessory(this, accessory));
+  }
+
   /**
    * This is an example method showing how to register discovered accessories.
    * Accessories must only be registered once, previously created accessories
@@ -141,13 +145,13 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
         this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
         existingAccessory.context.device = device;
         this.api.updatePlatformAccessories([existingAccessory]);
-        this.snowyAccessories.push(new IsSnowyAccessory(this, existingAccessory));
+        this.addNewSnowyAccessory(existingAccessory);
         this.debug('Created new SnowyAccessory object:', existingAccessory.displayName);
       } else {
         this.log.info('Adding new accessory:', device.displayName);
         const accessory = new this.api.platformAccessory(device.displayName, uuid);
         accessory.context.device = device;
-        this.snowyAccessories.push(new IsSnowyAccessory(this, accessory));
+        this.addNewSnowyAccessory(accessory);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
     }

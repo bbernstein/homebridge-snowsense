@@ -344,6 +344,9 @@ describe('SnowForecastService', () => {
     });
 
     it('should output to console.debug', async () => {
+      // Create a mock function and assign it to console.debug
+      console.debug = jest.fn();
+
       const weather = new SnowForecastService(console,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();

@@ -2,9 +2,11 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-  coverageReporters: ["lcov"],
-  collectCoverageFrom: [
-    "src/SnowForecastService.ts",
-    "src/SnowWatch.ts"
-  ],
+  collectCoverage: true,
+  coverageReporters: ["lcov", "json", "html", "text"],
+  // collectCoverageFrom: [
+  //   "src/platformAccessory.ts",
+  //   "src/SnowForecastService.ts",
+  //   "src/SnowWatch.ts"
+  // ],
 };

@@ -15,16 +15,16 @@ export class IsSnowyAccessory {
   ) {
 
     // set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.displayName)
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, '@bbernstein')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Snow Sense');
+    accessory.getService(platform.Service.AccessoryInformation)!
+      .setCharacteristic(platform.Characteristic.Name, accessory.context.device.displayName)
+      .setCharacteristic(platform.Characteristic.Manufacturer, '@bbernstein')
+      .setCharacteristic(platform.Characteristic.Model, 'Snow Sense');
 
-    this.service = this.accessory.getService(this.platform.Service.OccupancySensor) ||
-      this.accessory.addService(this.platform.Service.OccupancySensor);
+    this.service = accessory.getService(platform.Service.OccupancySensor) ||
+      accessory.addService(platform.Service.OccupancySensor);
 
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.displayName);
-    this.service.setCharacteristic(this.platform.Characteristic.OccupancyDetected, 0);
+    this.service.setCharacteristic(platform.Characteristic.Name, accessory.context.device.displayName);
+    this.service.setCharacteristic(platform.Characteristic.OccupancyDetected, 0);
   }
 
   public setCharacteristic(service, value: boolean) {

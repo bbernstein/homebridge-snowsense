@@ -8,13 +8,14 @@ export interface DeviceConfig {
   hoursAfterSnowIsSnowy: number;
   consecutiveHoursFutureIsSnowy: number;
 }
+export type SnowSenseUnits = 'imperial' | 'metric' | 'standard';
 
 export interface SnowSenseConfig extends PlatformConfig {
   apiKey: string;
   apiVersion: string;
   apiThrottleMinutes: number;
   debugOn: boolean;
-  units?: 'imperial' | 'metric' | 'standard';
+  units?: SnowSenseUnits;
   location: string;
   coldPrecipitationThreshold?: number;
   onlyWhenCold: boolean;
@@ -77,6 +78,9 @@ function deepEqual(obj1: any, obj2: any): boolean {
 
 export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logger: Logger) {
   let configChanged = false;
+  if (config.debugOn === undefined) {
+    config.debugOn = false;
+  }
   // read legacy configs, and see if anything changed
   if (!config.sensors
     && config.name
