@@ -66,7 +66,7 @@ interface SnowWatchValues {
   futureConsecutiveHours: number;
 }
 
-export default class SnowWatch {
+export class SnowWatch {
   private static instance: SnowWatch;
   private apiKey?: string;
   private readonly debugOn: boolean;

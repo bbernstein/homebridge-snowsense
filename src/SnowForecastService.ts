@@ -58,7 +58,7 @@ export default class SnowForecastService {
   private readonly apiKey: string = '';
   private readonly apiVersion: string = '2.5';
   private readonly debugOn: boolean;
-  private readonly location: string = '';
+  public readonly location: string = '';
   private weatherUrl?: string;
   public readonly units: string = '';
   private weatherCache?: SnowForecast;

@@ -184,6 +184,20 @@ describe('SnowForecastService', () => {
       jest.restoreAllMocks();
     });
 
+    it('should set default values for location and units', async () => {
+      axios.get = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
+
+      const weather = new SnowForecastService(console,
+        {
+          apiKey: 'xxx',
+          apiVersion: '3.0',
+          apiThrottleMinutes: 10,
+        });
+      expect(weather.location).toBe('New York,NY,US');
+      expect(weather.units).toBe('imperial');
+    });
+
     it('should set lat,lon to values from city api', async () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));

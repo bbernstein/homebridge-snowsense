@@ -1,11 +1,19 @@
-import {API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, Service} from 'homebridge';
+import {
+  API,
+  APIEvent,
+  Characteristic,
+  DynamicPlatformPlugin,
+  Logger,
+  PlatformAccessory,
+  Service,
+} from 'homebridge';
 
-import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
-import {IsSnowyAccessory} from './platformAccessory';
-import SnowWatch from './SnowWatch';
-import {SnowSenseConfig, upgradeConfigs} from './SnowSenseConfig';
-import {PlatformConfig} from 'homebridge/lib/bridgeService';
-import {debug} from 'util';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { IsSnowyAccessory } from './platformAccessory';
+import { SnowWatch } from './SnowWatch';
+import { SnowSenseConfig, upgradeConfigs } from './SnowSenseConfig';
+import { PlatformConfig } from 'homebridge/lib/bridgeService';
+import { debug } from 'util';
 
 /**
  * HomebridgePlatform
@@ -14,7 +22,9 @@ import {debug} from 'util';
  */
 export class SnowSensePlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
-  public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+  public readonly Characteristic: typeof Characteristic =
+    this.api.hap.Characteristic;
+
   // this is used to track restored cached accessories
   public accessories: PlatformAccessory[] = [];
   public snowyAccessories: IsSnowyAccessory[] = [];
@@ -26,9 +36,12 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     public readonly platformConfig: PlatformConfig,
     public readonly api: API,
   ) {
-
     const config = platformConfig as SnowSenseConfig;
-    if (config.units !== 'imperial' && config.units !== 'metric' && config.units !== 'standard') {
+    if (
+      config.units !== 'imperial' &&
+      config.units !== 'metric' &&
+      config.units !== 'standard'
+    ) {
       config.units = 'imperial';
     }
 
@@ -37,7 +50,8 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
 
     this.debugOn = config.debugOn;
     this.debug('Finished initializing platform:', config.name);
-    this.forecastFrequencyMillis = 1000 * 60 * (config.apiThrottleMinutes || 15);
+    this.forecastFrequencyMillis =
+      1000 * 60 * (config.apiThrottleMinutes || 15);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -49,20 +63,19 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     });
   }
 
-  private async startWatchingWeather(config: SnowSenseConfig) {
-    await SnowWatch.init(this.log,
-      {
-        apiKey: config.apiKey,
-        apiVersion: config.apiVersion,
-        debugOn: config.debugOn,
-        location: config.location,
-        units: config.units,
-        apiThrottleMinutes: config.apiThrottleMinutes || 15,
-        coldPrecipitationThreshold: config.coldPrecipitationThreshold,
-        onlyWhenCold: config.onlyWhenCold,
-        coldTemperatureThreshold: config.coldTemperatureThreshold,
-        storagePath: this.api.user.storagePath(),
-      });
+  public async startWatchingWeather(config: SnowSenseConfig) {
+    await SnowWatch.init(this.log, {
+      apiKey: config.apiKey,
+      apiVersion: config.apiVersion,
+      debugOn: config.debugOn,
+      location: config.location,
+      units: config.units,
+      apiThrottleMinutes: config.apiThrottleMinutes || 15,
+      coldPrecipitationThreshold: config.coldPrecipitationThreshold,
+      onlyWhenCold: config.onlyWhenCold,
+      coldTemperatureThreshold: config.coldTemperatureThreshold,
+      storagePath: this.api.user.storagePath(),
+    });
     await this.watchWeather();
   }
 
@@ -77,11 +90,15 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     }
 
     // tell all the accessories to update their values
-    that.snowyAccessories.forEach(snowyAccessory => {
+    that.snowyAccessories.forEach((snowyAccessory) => {
       debug('device:', snowyAccessory.accessory.context.device);
-      const service = snowyAccessory.accessory.getService(that.Service.OccupancySensor);
+      const service = snowyAccessory.accessory.getService(
+        that.Service.OccupancySensor,
+      );
       if (service) {
-        const newValue = watcher.snowSensorValue(snowyAccessory.accessory.context.device);
+        const newValue = watcher.snowSensorValue(
+          snowyAccessory.accessory.context.device,
+        );
         snowyAccessory.updateValueIfChanged(service, newValue);
       }
     });
@@ -96,9 +113,13 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
 
   private async watchWeather() {
     await SnowSensePlatform.updateAccessories(this);
-    this.debug(`Updating weather (first time). frequency: ${this.forecastFrequencyMillis}`);
+    this.debug(
+      `Updating weather (first time). frequency: ${this.forecastFrequencyMillis}`,
+    );
     await setInterval(async () => {
-      this.debug(`Updating weather (repeating). frequency: ${this.forecastFrequencyMillis}`);
+      this.debug(
+        `Updating weather (repeating). frequency: ${this.forecastFrequencyMillis}`,
+      );
       await SnowSensePlatform.updateAccessories(this);
     }, this.forecastFrequencyMillis);
   }
@@ -125,13 +146,25 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
    */
   discoverDevices(config: SnowSenseConfig) {
     const snowyDevices = config.sensors || [];
-    const accessoriesToRemove = this.accessories
-      .filter(accessory => snowyDevices && !snowyDevices.find(device => device.displayName === accessory.displayName));
+    const accessoriesToRemove = this.accessories.filter(
+      (accessory) =>
+        snowyDevices &&
+        !snowyDevices.find(
+          (device) => device.displayName === accessory.displayName,
+        ),
+    );
 
     for (const accessory of accessoriesToRemove) {
-      this.log.info('Removing old accessory from cache:', accessory.displayName);
-      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      this.accessories = this.accessories.filter(a => a.UUID !== accessory.UUID);
+      this.log.info(
+        'Removing old accessory from cache:',
+        accessory.displayName,
+      );
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+        accessory,
+      ]);
+      this.accessories = this.accessories.filter(
+        (a) => a.UUID !== accessory.UUID,
+      );
     }
 
     // loop over the discovered devices and register each one if it has not already been registered
@@ -139,20 +172,35 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       if (!device.displayName) {
         device.displayName = 'Snowy-' + Math.random().toString(36).substring(7);
       }
-      const uuid = this.api.hap.uuid.generate('SNOWSENSE-' + device.displayName);
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+      const uuid = this.api.hap.uuid.generate(
+        'SNOWSENSE-' + device.displayName,
+      );
+      const existingAccessory = this.accessories.find(
+        (accessory) => accessory.UUID === uuid,
+      );
       if (existingAccessory) {
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+        this.log.info(
+          'Restoring existing accessory from cache:',
+          existingAccessory.displayName,
+        );
         existingAccessory.context.device = device;
         this.api.updatePlatformAccessories([existingAccessory]);
         this.addNewSnowyAccessory(existingAccessory);
-        this.debug('Created new SnowyAccessory object:', existingAccessory.displayName);
+        this.debug(
+          'Created new SnowyAccessory object:',
+          existingAccessory.displayName,
+        );
       } else {
         this.log.info('Adding new accessory:', device.displayName);
-        const accessory = new this.api.platformAccessory(device.displayName, uuid);
+        const accessory = new this.api.platformAccessory(
+          device.displayName,
+          uuid,
+        );
         accessory.context.device = device;
         this.addNewSnowyAccessory(accessory);
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+          accessory,
+        ]);
       }
     }
   }
