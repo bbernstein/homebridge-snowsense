@@ -184,6 +184,13 @@ npm version patch
 npm publish
 ```
 
+I've added a github action [ai-code-review-action](https://github.com/marketplace/actions/ai-code-review-action)
+to do code reviews on all pull requests. I'm using a fork of the original that allows setting
+the specific OpenAI model to use.
+It requires an openai api key to work. You can get one for free at https://platform.openai.com/.
+If you fork this repo and want to use it, you'll need to add the key to your repo secrets
+as `OPENAI_API_KEY` and `GH_TOKEN` (for the action to be able to post comments).
+
 ## Reporting Issues and Suggestions
 
 Please use the [GitHub Issue Tracker](https://github.com/bbernstein/homebridge-snowsense/issues)
