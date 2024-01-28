@@ -79,7 +79,7 @@ export class SnowWatch {
   private readonly coldTemperatureThreshold?: number;
   public pastReports: SnowReport[] = [];
   private storagePath: string;
-  private currentReport?: SnowReport;
+  public currentReport?: SnowReport;
   private futureReports: SnowReport[] = [];
 
   constructor(log: Logger, options: SnowWatchOptions) {

@@ -60,9 +60,8 @@ const makeForecastList = (
 };
 
 const readMockForecast = async (watcher, forecast) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jest
-    .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+    .spyOn(SnowForecastService.prototype, 'getSnowForecast')
     .mockResolvedValueOnce(forecast);
   await watcher.updatePredictionStatus();
 };
@@ -162,9 +161,8 @@ describe('SnowWatch', () => {
         current: makeForecast(1670879317, false, 35.24),
         hourly: report,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
-        .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .spyOn(SnowForecastService.prototype as SnowForecastService, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
 
       await SnowWatch.init(logger, swOptions);
@@ -178,8 +176,8 @@ describe('SnowWatch', () => {
 
     it('should get instance, but if forecast fails, we get nothing', async () => {
       // mock the forecast service to return null
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
         .mockResolvedValueOnce(null);
 
@@ -194,7 +192,6 @@ describe('SnowWatch', () => {
   describe('check issues with reading/writing history', () => {
     it('should read an empty history', async () => {
       // use the above forecast mock
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await SnowWatch.init(logger, swOptions);
       const watcher = SnowWatch.getInstance();
       const watcherProto = Object.getPrototypeOf(watcher);
@@ -333,8 +330,8 @@ describe('SnowWatch', () => {
 
   describe('handle null/empty currentReport', () => {
     it('getSnowSenseValues should return isSnowingNow as false when currentReport is undefined', () => {
-      const watcher = SnowWatch.getInstance();
-      (watcher as any).currentReport = undefined;
+      const watcher: SnowWatch = SnowWatch.getInstance();
+      watcher.currentReport = undefined;
       const values = watcher.getSnowSenseValues();
       expect(values.snowingNow).toBe(false);
     });
@@ -347,9 +344,8 @@ describe('SnowWatch', () => {
         hourly: makeForecastList(3, dtHour(0), false, 35.24),
       };
       // use the above forecast mock
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
-        .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .spyOn(SnowForecastService.prototype, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
     });
 
@@ -384,9 +380,8 @@ describe('SnowWatch', () => {
       };
 
       // use the above forecast mock
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
-        .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .spyOn(SnowForecastService.prototype, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
     });
 
@@ -436,9 +431,8 @@ describe('SnowWatch', () => {
       };
 
       // use the above forecast mock
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
-        .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .spyOn(SnowForecastService.prototype, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
     });
 
@@ -486,9 +480,8 @@ describe('SnowWatch', () => {
       };
 
       // use the above forecast mock
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
-        .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .spyOn(SnowForecastService.prototype, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
     });
 
@@ -542,9 +535,8 @@ describe('SnowWatch', () => {
       };
 
       // use the above forecast mock
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
-        .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+        .spyOn(SnowForecastService.prototype, 'getSnowForecast')
         .mockResolvedValueOnce(forecast);
     });
 
@@ -615,9 +607,8 @@ describe('SnowWatch', () => {
           hourly: [...report1, ...report2, ...report3],
         };
         // use the above forecast mock
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest
-          .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+          .spyOn(SnowForecastService.prototype, 'getSnowForecast')
           .mockResolvedValueOnce(forecast);
         await readMockForecast(watcher, forecast);
       });
@@ -677,9 +668,8 @@ describe('SnowWatch', () => {
           hourly: [...report1, ...report2, ...report3],
         };
         // use the above forecast mock
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest
-          .spyOn(SnowForecastService.prototype as any, 'getSnowForecast')
+          .spyOn(SnowForecastService.prototype, 'getSnowForecast')
           .mockResolvedValueOnce(forecast);
         await readMockForecast(watcher, forecast);
       });
