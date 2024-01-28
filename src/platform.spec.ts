@@ -2,7 +2,7 @@ import { SnowSenseConfig, SnowSenseUnits } from './SnowSenseConfig';
 import { SnowSensePlatform } from './platform';
 import { API, Logger, PlatformConfig } from 'homebridge';
 import { SnowWatch } from './SnowWatch';
-import * as tmp from 'tmp';
+import tmp from 'tmp';
 import { writeFileSync } from 'fs';
 
 jest.mock('./SnowWatch', () => {
@@ -120,14 +120,14 @@ describe('SnowSensePlatform', () => {
     it('should set units to imperial if not specified', () => {
       const platform = new SnowSensePlatform(log, platformConfig, api);
 
-      expect((platform.platformConfig as any).units).toEqual('imperial');
+      expect((platform.platformConfig as PlatformConfig).units).toEqual('imperial');
     });
 
     it('should not change units if already specified', () => {
       platformConfig.units = 'metric';
       const platform = new SnowSensePlatform(log, platformConfig, api);
 
-      expect((platform.platformConfig as any).units).toEqual('metric');
+      expect((platform.platformConfig as PlatformConfig).units).toEqual('metric');
     });
 
     it('should correctly handle DID_FINISH_LAUNCHING event', () => {

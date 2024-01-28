@@ -4,4 +4,5 @@ module.exports = {
   testEnvironment: "node",
   collectCoverage: true,
   coverageReporters: ["lcov", "json", "html", "text"],
+  fakeTimers: { enableGlobally: true },
 };
