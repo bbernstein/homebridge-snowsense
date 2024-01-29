@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {Logger} from 'homebridge';
+import { SnowSenseUnits } from './SnowSenseConfig';
 
 /**
  * A single snapshot of data needed to determine if it might be snowing
@@ -41,7 +42,7 @@ export type SnowForecastOptions = {
   /**
    * Units to request from weather api
    */
-  units?: 'imperial' | 'metric' | 'standard';
+  units?: SnowSenseUnits;
 
   /**
    * Location to request from weather api
@@ -57,7 +58,7 @@ export default class SnowForecastService {
   private readonly apiKey: string = '';
   private readonly apiVersion: string = '2.5';
   private readonly debugOn: boolean;
-  private readonly location: string = '';
+  public readonly location: string = '';
   private weatherUrl?: string;
   public readonly units: string = '';
   private weatherCache?: SnowForecast;
@@ -132,7 +133,12 @@ export default class SnowForecastService {
    * @private
    */
   private async getLocationFromZip(zip: string): Promise<{ lat: number; lon: number }> {
+    // If the location is a zip code, use the OpenWeatherMap API to convert it
     this.debug(`Converting zip code ${zip} to latitude-longitude pair`);
+
+    // TODO: do something here?
+
+
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
     const response = await axios.get(geocodingApiUrl);
