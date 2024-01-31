@@ -10,6 +10,7 @@ An Occupancy Sensor that indicates snowy conditions using local weather forecast
 [![GitHub last commit](https://img.shields.io/github/last-commit/bbernstein/homebridge-snowsense.svg)](https://github.com/bbernstein/homebridge-snowsense)
 [![npm](https://img.shields.io/npm/v/homebridge-snowsense?label=npm%20package)](https://github.com/bbernstein/homebridge-snowsense)
 [![npm](https://img.shields.io/npm/dt/homebridge-snowsense.svg)](https://www.npmjs.com/package/homebridge-snowsense)
+
 </div>
 
 This is a plugin for [homebridge](https://github.com/nfarina/homebridge) that is a simple Occupancy Sensor that automatically detects occupancy ON when it's going to snow soon and OFF a while after it stops snowing. Think of **snow** being the **occupant** and you have ample warning of when the (un)welcome guest arrives.
