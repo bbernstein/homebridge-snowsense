@@ -1,7 +1,6 @@
 <div style="text-align: center;">
-<p>
+
 ![https://github.com/bbernstein/homebridge-snowsense](logo/homebridge-snowsense.png)
-</p>
 
 # homebridge-snowsense
 
