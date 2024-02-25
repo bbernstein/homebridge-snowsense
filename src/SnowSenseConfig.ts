@@ -8,13 +8,14 @@ export interface DeviceConfig {
   hoursAfterSnowIsSnowy: number;
   consecutiveHoursFutureIsSnowy: number;
 }
+export type SnowSenseUnits = 'imperial' | 'metric' | 'standard';
 
 export interface SnowSenseConfig extends PlatformConfig {
   apiKey: string;
   apiVersion: string;
   apiThrottleMinutes: number;
   debugOn: boolean;
-  units?: 'imperial' | 'metric' | 'standard';
+  units?: SnowSenseUnits;
   location: string;
   coldPrecipitationThreshold?: number;
   onlyWhenCold: boolean;
@@ -22,9 +23,9 @@ export interface SnowSenseConfig extends PlatformConfig {
   sensors?: DeviceConfig[];
 
   // old configs
-  hoursBeforeSnowIsSnowy: number;
-  hoursAfterSnowIsSnowy: number;
-  consecutiveHoursOfSnowIsSnowy: number;
+  hoursBeforeSnowIsSnowy?: number;
+  hoursAfterSnowIsSnowy?: number;
+  consecutiveHoursOfSnowIsSnowy?: number;
   latitude?: number;
   longitude?: number;
   afterSnowStops?: number;
@@ -76,7 +77,14 @@ function deepEqual(obj1: any, obj2: any): boolean {
 }
 
 export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logger: Logger) {
+  if (!configPath) {
+    logger.info('upgradeConfigs, no configPath provided, returning');
+    return;
+  }
   let configChanged = false;
+  if (config.debugOn === undefined) {
+    config.debugOn = false;
+  }
   // read legacy configs, and see if anything changed
   if (!config.sensors
     && config.name
@@ -144,7 +152,9 @@ export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logg
   if (configChanged) {
     try {
       logger.info('Updating config to new format. ', config);
-      const allConfigs = JSON.parse(readFileSync(configPath, 'utf8'));
+      const configContents = readFileSync(configPath, 'utf8');
+      const allConfigs = JSON.parse(configContents);
+
       // find the platform entry matching this platform
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const platformIndex = allConfigs.platforms.findIndex((c: any) => c.platform === config.platform);
