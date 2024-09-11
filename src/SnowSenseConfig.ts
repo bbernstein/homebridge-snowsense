@@ -36,7 +36,27 @@ export interface SnowSenseConfig extends PlatformConfig {
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function deepEqual(obj1: any, obj2: any): boolean {
+export function deepEqual(obj1: any, obj2: any): boolean {
+  // If both are null or undefined, they're equal
+  if (obj1 === null && obj2 === null) {
+    return true;
+  }
+
+  // If only one is null or undefined, they're not equal
+  if (obj1 === null || obj2 === null) {
+    return false;
+  }
+
+  // Handle Date objects
+  if (obj1 instanceof Date && obj2 instanceof Date) {
+    return obj1.getTime() === obj2.getTime();
+  }
+
+  // Handle RegExp objects
+  if (obj1 instanceof RegExp && obj2 instanceof RegExp) {
+    return obj1.toString() === obj2.toString();
+  }
+
   // Check if the objects are arrays
   const isArr1 = Array.isArray(obj1);
   const isArr2 = Array.isArray(obj2);
@@ -56,20 +76,19 @@ function deepEqual(obj1: any, obj2: any): boolean {
     // If one object is an array and the other is not, they are not equal
     return false;
   }
-  // If the objects are not arrays, continue with the original comparison
+
+  // If we've reached this point, we know we're dealing with objects (not arrays)
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+    return obj1 === obj2;
+  }
+
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
   if (keys1.length !== keys2.length) {
     return false;
   }
   for (const key of keys1) {
-    const val1 = obj1[key];
-    const val2 = obj2[key];
-    if (typeof val1 === 'object' && typeof val2 === 'object') {
-      if (!deepEqual(val1, val2)) {
-        return false;
-      }
-    } else if (val1 !== val2) {
+    if (!deepEqual(obj1[key], obj2[key])) {
       return false;
     }
   }
@@ -81,6 +100,7 @@ export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logg
     logger.info('upgradeConfigs, no configPath provided, returning');
     return;
   }
+
   let configChanged = false;
   if (config.debugOn === undefined) {
     config.debugOn = false;
