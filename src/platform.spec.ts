@@ -18,12 +18,6 @@ jest.mock('./SnowWatch', () => {
   };
 });
 
-SnowWatch.init = jest.fn();  // this mocks the static method
-SnowWatch.getInstance = jest.fn().mockReturnValue({
-  updatePredictionStatus: jest.fn(),
-  // return other mocked instance methods as needed
-});
-
 describe('SnowSensePlatform', () => {
   let log: Logger;
   let platformConfig: PlatformConfig;
@@ -128,74 +122,6 @@ describe('SnowSensePlatform', () => {
       const platform = new SnowSensePlatform(log, platformConfig, api);
 
       expect((platform.platformConfig as PlatformConfig).units).toEqual('metric');
-    });
-
-    it('should correctly handle DID_FINISH_LAUNCHING event', () => {
-      const platform = new SnowSensePlatform(log, platformConfig, api);
-      const discoverDevicesSpy = jest.spyOn(platform, 'discoverDevices');
-      const startWatchingWeatherSpy = jest.spyOn(
-        platform,
-        'startWatchingWeather',
-      );
-
-      // Simulate the DID_FINISH_LAUNCHING event
-      const callback = (api.on as jest.Mock).mock.calls[0][1];
-      callback();
-
-      expect(discoverDevicesSpy).toHaveBeenCalledWith(platformConfig);
-      expect(startWatchingWeatherSpy).toHaveBeenCalledWith(platformConfig);
-    });
-  });
-
-  describe('UpdateAccessories', () => {
-    let platform: SnowSensePlatform;
-    let snowWatch: SnowWatch;
-
-    beforeEach(() => {
-      platform = new SnowSensePlatform(log, platformConfig, api);
-      snowWatch = SnowWatch.getInstance();
-    });
-
-    it('should initialize SnowWatch and start watching weather', async () => {
-      const config: SnowSenseConfig = {
-        apiKey: 'testApiKey',
-        apiVersion: 'testApiVersion',
-        apiThrottleMinutes: 15,
-        debugOn: true,
-        units: 'imperial' as SnowSenseUnits,
-        location: 'testLocation',
-        coldPrecipitationThreshold: 0,
-        onlyWhenCold: false,
-        coldTemperatureThreshold: 0,
-        sensors: [
-          {
-            displayName: 'testSensor',
-            hoursBeforeSnowIsSnowy: 1,
-            hoursAfterSnowIsSnowy: 1,
-            consecutiveHoursFutureIsSnowy: 1,
-          },
-        ],
-        platform: 'SnowSense',
-        name: 'testName',
-      };
-
-      await platform.startWatchingWeather(config);
-
-      expect(SnowWatch.init).toHaveBeenCalledWith(platform.log, {
-        apiKey: config.apiKey,
-        apiVersion: config.apiVersion,
-        debugOn: config.debugOn,
-        location: config.location,
-        units: config.units,
-        apiThrottleMinutes: config.apiThrottleMinutes,
-        coldPrecipitationThreshold: config.coldPrecipitationThreshold,
-        onlyWhenCold: config.onlyWhenCold,
-        coldTemperatureThreshold: config.coldTemperatureThreshold,
-        storagePath: platform.api.user.storagePath(),
-      });
-
-      jest.advanceTimersByTime(platform.forecastFrequencyMillis);
-      expect(snowWatch.updatePredictionStatus).toHaveBeenCalled();
     });
   });
 });

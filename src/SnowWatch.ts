@@ -1,61 +1,23 @@
-import {Logger} from 'homebridge';
-import SnowForecastService, {SnowForecast, SnowReport} from './SnowForecastService';
-import {DeviceConfig, SnowSenseUnits} from './SnowSenseConfig';
+import { Logger } from 'homebridge';
+import SnowForecastService, { SnowForecast, SnowReport } from './SnowForecastService';
+import { DeviceConfig, SnowSenseUnits } from './SnowSenseConfig';
 import fs from 'fs';
 import path from 'path';
 
 export const HISTORY_FILE = 'snowsense-history.json';
 
 export type SnowWatchOptions = {
-  /**
-   * Get an api key from https://openweathermap.org/api
-   */
   apiKey: string;
-  /**
-   * Latest version is 3.0, but allow using 2.5 for backwards compatibility
-   */
   apiVersion: string;
-  /**
-   * Do not call the api more often than this number of minutes
-   */
   apiThrottleMinutes?: number;
-  /**
-   * Show debug logging
-   */
   debugOn?: boolean;
-  /**
-   * Units to request from weather api
-   */
   units?: SnowSenseUnits;
-
-  /**
-   * Location to request from weather api
-   * This is in format of one of these:
-   * - city,state,country (eg, "New York,NY,US")
-   * - zip (eg, "10001")
-   * - latitude,longitude (eg, "40.7143,-74.006")
-   */
   location?: string;
-
-  /**
-   * If the current temperature is below this number and it's precipitating, consider it "snowing"
-   */
   coldPrecipitationThreshold?: number;
-
-  /**
-   * Only consider it snowy if the given temperature is below coldPrecipitationThreshold
-   */
   onlyWhenCold: boolean;
-
-  /**
-   * If onlyWhenCold is true, only consider it snowy if the given temperature is below this number
-   */
   coldTemperatureThreshold?: number;
-
-  /**
-   * Where to store SnowReport history in case we shut down
-   */
   storagePath: string;
+  historyFile: string;
 };
 
 interface SnowWatchValues {
@@ -67,40 +29,43 @@ interface SnowWatchValues {
 }
 
 export class SnowWatch {
-  private static instance: SnowWatch;
-  private apiKey?: string;
   private readonly debugOn: boolean;
   private readonly coldPrecipitationThreshold?: number;
   private readonly snowForecastService: SnowForecastService;
-  public latestForecast?: SnowForecast; // made public for testing (hack)
-  private isSetup: boolean;
-  private readonly logger: Logger;
+  public latestForecast?: SnowForecast;
   private readonly onlyWhenCold: boolean;
   private readonly coldTemperatureThreshold?: number;
   public pastReports: SnowReport[] = [];
   private storagePath: string;
+  private historyFile: string;
   public currentReport?: SnowReport;
   private futureReports: SnowReport[] = [];
+  private isSetup = false;
 
-  constructor(log: Logger, options: SnowWatchOptions) {
+  constructor(
+    private readonly logger: Logger,
+    private readonly options: SnowWatchOptions,
+    snowForecastService?: SnowForecastService,
+  ) {
     this.coldPrecipitationThreshold = options.coldPrecipitationThreshold;
-    this.apiKey = options.apiKey;
     this.debugOn = !!options.debugOn;
-    this.isSetup = false;
     this.onlyWhenCold = options.onlyWhenCold;
     this.coldTemperatureThreshold = options.coldTemperatureThreshold;
-    this.logger = log;
     this.storagePath = options.storagePath;
-    this.pastReports = this.readPastReports(options.storagePath);
-    this.snowForecastService = new SnowForecastService(this.logger,
-      {
-        apiKey: options.apiKey,
-        apiVersion: options.apiVersion,
-        debugOn: options.debugOn,
-        location: options.location,
-        units: options.units,
-        apiThrottleMinutes: options.apiThrottleMinutes,
-      });
+    this.historyFile = HISTORY_FILE;
+    this.pastReports = this.readPastReports(options.storagePath, options.historyFile);
+    this.snowForecastService = snowForecastService ?? new SnowForecastService(this.logger, {
+      apiKey: options.apiKey,
+      apiVersion: options.apiVersion,
+      debugOn: options.debugOn,
+      location: options.location,
+      units: options.units,
+      apiThrottleMinutes: options.apiThrottleMinutes,
+    });
+  }
+
+  public getFutureReports(): SnowReport[] {
+    return this.futureReports;
   }
 
   private deleteFile(filePath: string) {
@@ -115,11 +80,11 @@ export class SnowWatch {
     }
   }
 
-  private readPastReports(storagePath: string): SnowReport[] {
+  private readPastReports(storagePath: string, historyFile: string): SnowReport[] {
     if (!storagePath) {
       return [];
     }
-    const filePath = path.join(storagePath, HISTORY_FILE);
+    const filePath = path.join(storagePath, historyFile);
     try {
       if (fs.existsSync(filePath)) {
         const result = JSON.parse(fs.readFileSync(filePath, 'utf8')) as SnowReport[];
@@ -145,8 +110,8 @@ export class SnowWatch {
     return [];
   }
 
-  private writePastReports(storagePath: string, reports: SnowReport[]) {
-    const filePath = path.join(storagePath, HISTORY_FILE);
+  private writePastReports(storagePath: string, historyFile: string, reports: SnowReport[]) {
+    const filePath = path.join(storagePath, historyFile);
     try {
       fs.mkdirSync(storagePath, {recursive: true, mode: 0o755});
       fs.writeFileSync(filePath, JSON.stringify(reports), {encoding: 'utf8', flag: 'w'});
@@ -170,46 +135,16 @@ export class SnowWatch {
   }
 
   /**
-   * Initialize the singleton instance of the SnowWatch class
-   * @param log The logger to use
-   * @param options The options for the service
-   */
-  public static async init(log: Logger, options: SnowWatchOptions) {
-    SnowWatch.instance = new SnowWatch(log, options);
-  }
-
-  /**
-   * Get the singleton instance of the SnowWatch class
-   */
-  public static getInstance() {
-    if (!SnowWatch.instance) {
-      throw new Error('SnowWatch not initialized');
-    }
-
-    return SnowWatch.instance;
-  }
-
-  /**
    * Set up the weather service if needed
    * @private
    */
-  private async setup() {
+  public async setup() {
     if (this.isSetup) {
       return;
     }
     await this.snowForecastService.setup();
     this.isSetup = true;
   }
-
-  /**
-   * Read the weather and hold onto the latest forecast
-   */
-  private async readSnowForecast(): Promise<SnowForecast | undefined> {
-    await this.setup();
-    this.latestForecast = await this.snowForecastService.getSnowForecast();
-    return this.latestForecast;
-  }
-
 
   /**
    * Is the given report snowy enough to call it "snowy"?
@@ -247,16 +182,18 @@ export class SnowWatch {
    */
   public async updatePredictionStatus(): Promise<void> {
     // Get the latest forecast
-    const rawForecast = await this.readSnowForecast();
+    await this.setup();
+    const rawForecast = await this.snowForecastService.getSnowForecast();
     if (!rawForecast) {
       this.logger.error('No forecast available');
+      this.latestForecast = undefined;
       return;
     }
 
-    const forecast = this.convertToMillis(rawForecast);
-    this.addPastReport(forecast.current);
-    this.currentReport = forecast.current;
-    this.futureReports = forecast.hourly;
+    this.latestForecast = this.convertToMillis(rawForecast);
+    this.addPastReport(this.latestForecast.current);
+    this.currentReport = this.latestForecast.current;
+    this.futureReports = this.latestForecast.hourly;
 
     // The rest of this is all for debug logging
     const now = new Date().getTime();
@@ -306,7 +243,7 @@ export class SnowWatch {
       }, []);
 
     // save this in case we shut down
-    this.writePastReports(this.storagePath, this.pastReports);
+    this.writePastReports(this.storagePath, this.historyFile, this.pastReports);
   }
 
   private findStartAndConsecutiveSnowyHours(snowReports: SnowReport[], reverse = false): {
