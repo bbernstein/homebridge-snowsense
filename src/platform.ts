@@ -5,14 +5,14 @@ import {
   DynamicPlatformPlugin,
   Logger,
   PlatformAccessory,
+  PlatformConfig,
   Service,
 } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { IsSnowyAccessory } from './platformAccessory';
 import {HISTORY_FILE, SnowWatch} from './SnowWatch';
-import { SnowSenseConfig, upgradeConfigs } from './SnowSenseConfig';
-import { PlatformConfig } from 'homebridge/lib/bridgeService';
+import {DeviceConfig, SnowSenseConfig, upgradeConfigs} from './SnowSenseConfig';
 import { debug } from 'util';
 
 /**
@@ -31,6 +31,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   public readonly forecastFrequencyMillis = 1000 * 60 * 5;
   public readonly debugOn: boolean = false;
   public watcher: SnowWatch | undefined;
+  public config: PlatformConfig;
 
   constructor(
     public readonly log: Logger,
@@ -62,6 +63,8 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       this.discoverDevices(config);
       this.startWatchingWeather(config).then();
     });
+
+    this.config = config;
   }
 
   public async getWatcher(): Promise<SnowWatch> {
@@ -90,7 +93,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     setImmediate(this.watchWeather.bind(this));
   }
 
-  private async updateAccessories() {
+  async updateAccessories() {
     const watcher = await this.getWatcher();
     try {
       await watcher.updatePredictionStatus();
@@ -122,7 +125,11 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     }
   }
 
-  private async watchWeather() {
+  makeUuidForDevice(device: DeviceConfig): string {
+    return this.api.hap.uuid.generate('SNOWSENSE-' + device.displayName);
+  }
+
+  async watchWeather() {
     await this.updateAccessories();
     this.debug(
       `Updating weather (first time). frequency: ${this.forecastFrequencyMillis}`,
@@ -183,9 +190,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       if (!device.displayName) {
         device.displayName = 'Snowy-' + Math.random().toString(36).substring(7);
       }
-      const uuid = this.api.hap.uuid.generate(
-        'SNOWSENSE-' + device.displayName,
-      );
+      const uuid = this.makeUuidForDevice(device);
       const existingAccessory = this.accessories.find(
         (accessory) => accessory.UUID === uuid,
       );

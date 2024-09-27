@@ -1,5 +1,6 @@
 import SnowForecastService from './SnowForecastService';
 import axios from 'axios';
+import {Logger} from 'homebridge';
 
 
 // To see all possible weather conditions, look here:
@@ -34,9 +35,33 @@ const cityToLocationData = [
   },
 ];
 
+const debug = false;
+const consoleInfo = jest.fn((...args) =>
+  debug ? console.info(...args) : undefined,
+);
+const consoleWarn = jest.fn((...args) =>
+  debug ? console.warn(...args) : undefined,
+);
+const consoleError = jest.fn((...args) =>
+  debug ? console.error(...args) : undefined,
+);
+const consoleDebug = jest.fn((...args) =>
+  debug ? console.debug(...args) : undefined,
+);
+
 jest.mock('axios');
 
 describe('SnowForecastService', () => {
+  let mockLogger: jest.Mocked<Logger>;
+
+  beforeEach(() => {
+    mockLogger = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    } as unknown as jest.Mocked<Logger>;
+  });
 
   describe('Weather to Snow Forecast', () => {
     beforeEach(() => {
@@ -60,7 +85,7 @@ describe('SnowForecastService', () => {
     });
 
     it('should turn weather forecast into Snow forecast', async () => {
-      const snowForecastService = new SnowForecastService(console,
+      const snowForecastService = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -75,7 +100,7 @@ describe('SnowForecastService', () => {
     });
 
     it('should use cached weather on second try', async () => {
-      const snowForecastService = new SnowForecastService(console,
+      const snowForecastService = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -111,7 +136,7 @@ describe('SnowForecastService', () => {
 
     // This test breaks when fakeTimers are used as that breaks the sleep function
     it('should block a simultaneous call to get weather', async () => {
-      const snowForecastService = new SnowForecastService(console,
+      const snowForecastService = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -131,7 +156,7 @@ describe('SnowForecastService', () => {
 
     // This test breaks when fakeTimers are used as that breaks the sleep function
     it('should timeout when it takes too long', async () => {
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       const weatherProto = Object.getPrototypeOf(weather);
       weatherProto.debugOn = true;
@@ -157,7 +182,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({data: zipToLocationData}));
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
       await weather.setup();
       expect(weather.latLon).toStrictEqual({lat: 42.3168, lon: -71.2084});
@@ -167,7 +192,7 @@ describe('SnowForecastService', () => {
     it('should handle failed zip api', async () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve(null));
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
       try {
         await weather.setup();
@@ -188,7 +213,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -202,7 +227,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -218,7 +243,7 @@ describe('SnowForecastService', () => {
     it('should handle 401 when calling city api', async () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({cod: 401, message: 'fail'}));
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -243,7 +268,7 @@ describe('SnowForecastService', () => {
     it('should handle bad city api response', async () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve(null));
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -268,7 +293,7 @@ describe('SnowForecastService', () => {
     it('should handle bad data from api', async () => {
       axios.get = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({data: ''}));
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -299,7 +324,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
 
@@ -323,7 +348,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
       const weatherProto = Object.getPrototypeOf(weather);
@@ -336,7 +361,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementation(() => Promise.reject({response: {data: {message: 'fail'}}}));
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
       const weatherProto = Object.getPrototypeOf(weather);
@@ -358,16 +383,16 @@ describe('SnowForecastService', () => {
     });
 
     it('should output to console.debug', async () => {
-      // Create a mock function and assign it to console.debug
-      console.debug = jest.fn();
+      // Create a mock function and assign it to mockLogger.debug
+      mockLogger.debug = jest.fn();
 
-      const weather = new SnowForecastService(console,
+      const weather = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
-      const spy = jest.spyOn(console, 'debug');
+      const spy = jest.spyOn(mockLogger, 'debug');
       const weatherProto = Object.getPrototypeOf(weather);
       weatherProto.debugOn = true;
-      weatherProto.logger = console;
+      weatherProto.logger = mockLogger;
       weatherProto.debug('test');
       expect(spy).toHaveBeenCalled();
     });

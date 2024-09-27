@@ -116,6 +116,7 @@ describe('SnowWatch', () => {
       warn: consoleWarn,
       error: consoleError,
       debug: consoleDebug,
+      success: jest.fn(),
       log: jest.fn(),
     };
 

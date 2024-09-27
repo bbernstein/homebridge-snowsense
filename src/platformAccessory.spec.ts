@@ -67,7 +67,7 @@ describe('IsSnowyAccessory', () => {
     expect(service.setCharacteristic).toHaveBeenCalledWith(platform.Characteristic.OccupancyDetected, 0);
   });
 
-  it('should call setCharacteristic and updateCharacteristic', () => {
+  it('should call setCharacteristic and updateCharacteristic with value 1', () => {
     const value = true;
     const newValue = 1;
     const service = {
