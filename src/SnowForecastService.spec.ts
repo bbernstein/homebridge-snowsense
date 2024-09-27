@@ -99,6 +99,21 @@ describe('SnowForecastService', () => {
       expect(forecast.hourly.map(h => (h.hasPrecip))).toStrictEqual([false, false, true, true, true]);
     });
 
+    it('should turn weather forecast into Snow forecast with default throttle time', async () => {
+      const snowForecastService = new SnowForecastService(mockLogger,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial'});
+      await snowForecastService.setup();
+      expect(snowForecastService.units).toBe('imperial');
+      const forecast = await snowForecastService.getSnowForecast();
+      expect(forecast).toBeDefined();
+      expect(forecast.current.temp).toBe(31.24);
+      expect(forecast.current.hasSnow).toBe(false);
+      expect(forecast.current.hasPrecip).toBe(false);
+      expect(forecast.hourly.map(h => (h.temp))).toStrictEqual([31.24, 30.87, 30.33, 29.61, 28.71]);
+      expect(forecast.hourly.map(h => (h.hasSnow))).toStrictEqual([false, false, false, false, true]);
+      expect(forecast.hourly.map(h => (h.hasPrecip))).toStrictEqual([false, false, true, true, true]);
+    });
+
     it('should use cached weather on second try', async () => {
       const snowForecastService = new SnowForecastService(mockLogger,
         {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});

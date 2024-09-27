@@ -171,6 +171,33 @@ describe('SnowSensePlatform', () => {
       expect(platform.accessories).toContain(mockAccessory3);
     });
 
+    it('should correctly identify accessories to remove when sensors are null set', () => {
+      const mockAccessory1 = {displayName: 'Device1', UUID: 'uuid1'} as unknown as PlatformAccessory;
+      const mockAccessory2 = {displayName: 'Device2', UUID: 'uuid2'} as unknown as PlatformAccessory;
+      const mockAccessory3 = {displayName: 'Device3', UUID: 'uuid3'} as unknown as PlatformAccessory;
+
+      platform.accessories = [mockAccessory1, mockAccessory2, mockAccessory3];
+
+      (platform.platformConfig as any) = {
+        ...platform.platformConfig,
+        sensors: undefined,
+      };
+
+      const unregisterSpy = jest.spyOn(platform.api, 'unregisterPlatformAccessories');
+
+      platform.discoverDevices(platform.platformConfig as SnowSenseConfig);
+
+      expect(unregisterSpy).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [mockAccessory2],
+      );
+
+      expect(platform.accessories).not.toContain(mockAccessory1);
+      expect(platform.accessories).not.toContain(mockAccessory2);
+      expect(platform.accessories).not.toContain(mockAccessory3);
+    });
+
     it('should generate a random name for devices with undefined displayName', () => {
       // Mock Math.random to return a predictable value
       const mockMathRandom = jest.spyOn(Math, 'random').mockReturnValue(0.123456789);
