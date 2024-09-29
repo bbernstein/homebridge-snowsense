@@ -29,7 +29,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   public accessories: PlatformAccessory[] = [];
   public snowyAccessories: IsSnowyAccessory[] = [];
   public readonly forecastFrequencyMillis = 1000 * 60 * 5;
-  public readonly debugOn: boolean = false;
+  public readonly debugOn?: boolean = false;
   public watcher: SnowWatch | undefined;
   public config: PlatformConfig;
 
@@ -97,9 +97,10 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     const watcher = await this.getWatcher();
     try {
       await watcher.updatePredictionStatus();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      this.log.error(`Error getting updated weather: ${e.message}`);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        this.log.error(`Error getting updated weather: ${e.message}`);
+      }
       return;
     }
 
@@ -118,8 +119,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private debug(message: string, ...parameters: any[]): void {
+  private debug(message: string, ...parameters: unknown[]): void {
     if (this.debugOn) {
       this.log.debug(message, ...parameters);
     }

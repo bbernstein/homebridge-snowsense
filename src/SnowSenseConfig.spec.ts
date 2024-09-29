@@ -1,4 +1,4 @@
-import { deepEqual, upgradeConfigs, SnowSenseConfig } from './SnowSenseConfig';
+import {deepEqual, upgradeConfigs, SnowSenseConfig, SnowSenseUnits} from './SnowSenseConfig';
 import { readFileSync, writeFileSync } from 'fs';
 import { Logger } from 'homebridge';
 
@@ -196,7 +196,7 @@ describe('SnowSenseConfig', () => {
     });
 
     test('should set units to imperial if invalid', () => {
-      mockConfig.units = 'invalid' as any;
+      mockConfig.units = 'invalid' as SnowSenseUnits;
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
 
@@ -264,7 +264,7 @@ describe('SnowSenseConfig', () => {
         ...mockConfig,
         apiVersion: '3.0',
       };
-      delete (configWithoutDebugOn as any).debugOn;
+      delete configWithoutDebugOn.debugOn;
 
       upgradeConfigs(configWithoutDebugOn, 'path', mockLogger);
 

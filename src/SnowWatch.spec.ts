@@ -132,13 +132,21 @@ describe('SnowWatch', () => {
   afterEach(() => {
     try {
       fs.rmSync(defaultOptions.storagePath, { recursive: true });
-    } catch (err: Error | any) {
-      if (err.code !== 'ENOENT') {
-        console.error('Error removing tmpdir:', err);
+    } catch (e) {
+      if (e instanceof Error && 'code' in e && e.code !== 'ENOENT') {
+        console.error('Error removing tmpdir:', e);
       }
     }
     jest.resetAllMocks();
   });
+
+  // } catch (e: unknown) {
+  //   if (e instanceof Error) {
+  //     logger.error(`Error updating config file: ${e}`);
+  //   }
+  // }
+
+
 
   describe('constructor', () => {
     it('should initialize with provided options', () => {
@@ -856,7 +864,6 @@ describe('SnowWatch', () => {
     describe('it stopped snowing a little over two hours ago', () => {
       let watcher: SnowWatch;
 
-      let forecast: SnowForecast;
       const dConfig: DeviceConfig = {
         displayName: 'Test',
         hoursBeforeSnowIsSnowy: 0,

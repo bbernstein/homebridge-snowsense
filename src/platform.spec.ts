@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {SnowSensePlatform} from './platform';
 import {API, Logger, PlatformAccessory, PlatformConfig} from 'homebridge';
 import {BinaryLike} from 'crypto';
@@ -36,11 +38,12 @@ describe('SnowSensePlatform', () => {
 
     mockApi = {
       on: jest.fn(),
-      registerPlatformAccessories: jest.fn((pluginIdentifier: PluginIdentifier, platformName: PlatformName, accessories: PlatformAccessory[]) => {
+      registerPlatformAccessories: jest.fn((pluginIdentifier: PluginIdentifier,
+        platformName: PlatformName,
+        accessories: PlatformAccessory[]) => {
         accessories.forEach(accessory => {
           platform.configureAccessory(accessory);
         });
-        // platform.accessories.concat(accessories);
       }),
       unregisterPlatformAccessories: jest.fn(),
       updatePlatformAccessories: jest.fn(),
@@ -48,7 +51,8 @@ describe('SnowSensePlatform', () => {
         Service: jest.fn(),
         Characteristic: jest.fn(),
         uuid: {
-          generate: jest.fn((data: BinaryLike) => 'test-uuid') as jest.Mock<string, [BinaryLike]>,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          generate: jest.fn((_unusedData: BinaryLike) => 'test-uuid') as jest.Mock<string, [BinaryLike]>,
         },
       },
       user: {

@@ -81,6 +81,20 @@ describe('IsSnowyAccessory', () => {
     expect(service.updateCharacteristic).toHaveBeenCalledWith(platform.Characteristic.OccupancyDetected, newValue);
   });
 
+  it('should call setCharacteristic and updateCharacteristic with 0', () => {
+    const value = false;
+    const newValue = 0;
+    const service = {
+      updateCharacteristic: jest.fn(),
+    };
+
+    const accessoryInstance = new IsSnowyAccessory(platform, accessory);
+    accessoryInstance.setCharacteristic(service, value);
+
+    expect(platform.log.info).toHaveBeenCalledWith(`Setting value of ${accessoryInstance.accessory.displayName} to: `, newValue);
+    expect(service.updateCharacteristic).toHaveBeenCalledWith(platform.Characteristic.OccupancyDetected, newValue);
+  });
+
   it('should call updateValueIfChanged and setCharacteristic when value has changed', () => {
     const oldValue = false;
     const newValue = true;
@@ -95,20 +109,6 @@ describe('IsSnowyAccessory', () => {
     expect(service.getCharacteristic).toHaveBeenCalledWith(platform.Characteristic.OccupancyDetected);
     expect(platform.log.info).toHaveBeenCalledWith(`Setting value of ${accessoryInstance.accessory.displayName} to: `, newValue ? 1 : 0);
     expect(service.updateCharacteristic).toHaveBeenCalledWith(platform.Characteristic.OccupancyDetected, newValue ? 1 : 0);
-  });
-
-  it('should call setCharacteristic and updateCharacteristic with 0', () => {
-    const value = false;
-    const newValue = 0;
-    const service = {
-      updateCharacteristic: jest.fn(),
-    };
-
-    const accessoryInstance = new IsSnowyAccessory(platform, accessory);
-    accessoryInstance.setCharacteristic(service, value);
-
-    expect(platform.log.info).toHaveBeenCalledWith(`Setting value of ${accessoryInstance.accessory.displayName} to: `, newValue);
-    expect(service.updateCharacteristic).toHaveBeenCalledWith(platform.Characteristic.OccupancyDetected, newValue);
   });
 
   it('should not call setCharacteristic when value has not changed', () => {

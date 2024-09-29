@@ -36,8 +36,8 @@ export class SnowWatch {
   private readonly onlyWhenCold: boolean;
   private readonly coldTemperatureThreshold?: number;
   public pastReports: SnowReport[] = [];
-  private storagePath: string;
-  private historyFile: string;
+  private readonly storagePath: string;
+  private readonly historyFile: string;
   public currentReport?: SnowReport;
   private futureReports: SnowReport[] = [];
   private isSetup = false;
@@ -127,8 +127,7 @@ export class SnowWatch {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private debug(message: string, ...parameters: any[]): void {
+  private debug(message: string, ...parameters: unknown[]): void {
     if (this.debugOn) {
       this.logger.debug(message, ...parameters);
     }
