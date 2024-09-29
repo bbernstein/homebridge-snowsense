@@ -25,11 +25,11 @@ export type SnowForecastOptions = {
   /**
    * Get an api key from https://openweathermap.org/api
    */
-  apiKey: string;
+  apiKey?: string;
   /**
    * Latest version is 3.0, but allow using 2.5 for backwards compatibility
    */
-  apiVersion: string;
+  apiVersion?: string;
   /**
    * Show debug logging
    */
@@ -74,7 +74,7 @@ export default class SnowForecastService {
     this.fetchLock = false;
 
     this.apiKey = options.apiKey || '';
-    this.apiVersion = options.apiVersion || '2.5';
+    this.apiVersion = options.apiVersion || '3.0';
     this.debugOn = !!options.debugOn;
     this.location = options.location || 'New York,NY,US';
     this.units = options.units || 'imperial';

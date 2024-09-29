@@ -235,9 +235,9 @@ describe('SnowForecastService', () => {
       expect(forecast.hourly.map(h => (h.hasPrecip))).toStrictEqual([false, false, true, true, true]);
     });
 
-    it('should turn weather forecast into Snow forecast with default throttle time', async () => {
+    it('should turn weather forecast into Snow forecast with default option values', async () => {
       const snowForecastService = new SnowForecastService(mockLogger,
-        {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial'});
+        {units: 'imperial'});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
       const forecast = await snowForecastService.getSnowForecast();
