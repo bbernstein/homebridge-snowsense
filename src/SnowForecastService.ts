@@ -69,19 +69,28 @@ export default class SnowForecastService {
   public latLon?: { lat: number; lon: number };
   protected lockTimeoutMillis = 2000;
 
-  constructor(log: Logger, options: SnowForecastOptions) {
+  constructor(
+    log: Logger,
+    {
+      apiKey = '',
+      apiVersion = '3.0',
+      debugOn = false,
+      location = 'New York,NY,US',
+      units = 'imperial',
+      apiThrottleMinutes = 15,
+    }: SnowForecastOptions,
+  ) {
     this.logger = log;
     this.fetchLock = false;
 
-    this.apiKey = options.apiKey || '';
-    this.apiVersion = options.apiVersion || '3.0';
-    this.debugOn = !!options.debugOn;
-    this.location = options.location || 'New York,NY,US';
-    this.units = options.units || 'imperial';
+    this.apiKey = apiKey;
+    this.apiVersion = apiVersion;
+    this.debugOn = debugOn;
+    this.location = location;
+    this.units = units;
 
     // no more frequently than every 5 minutes, default to 15 minutes
-    const throttleMinutes = options.apiThrottleMinutes || 15;
-    this.apiThrottleMillis = Math.max(throttleMinutes, 5) * 60 * 1000;
+    this.apiThrottleMillis = Math.max(apiThrottleMinutes, 5) * 60 * 1000;
   }
 
   private debug(message: string, ...parameters: unknown[]): void {
@@ -111,19 +120,21 @@ export default class SnowForecastService {
 
     // If the location is a latitude-longitude pair, return it as-is
     if (this.isLatLong(location)) {
-      const latlon: number[] = location.split(',').map(str => parseFloat(str));
-      return {lat: latlon[0], lon: latlon[1]};
+      return this.parseLatLong(location);
     }
 
     if (this.isZipCode(location)) {
       // If the location is a zip code, use the OpenWeatherMap API to convert it
-      const fullLocation = await this.getLocationFromZip(location);
-      return {lat: fullLocation.lat, lon: fullLocation.lon};
+      return this.getLocationFromZip(location);
     }
 
     // Otherwise, assume the location is a city name
-    const fullLocation = await this.getLocationFromCity(location);
-    return {lat: fullLocation.lat, lon: fullLocation.lon};
+    return await this.getLocationFromCity(location);
+  }
+
+  private parseLatLong(location: string): { lat: number; lon: number } {
+    const [lat, lon] = location.split(',').map(str => parseFloat(str.trim()));
+    return { lat, lon };
   }
 
   /**
@@ -176,13 +187,7 @@ export default class SnowForecastService {
     const zipCodeRegex = /^\d{5}$/;
 
     // Check if the string matches the regular expressions
-    if (zipCodeRegex.test(location)) {
-      return true;
-    }
-
-    // If the string does not match either of the regular expressions,
-    // consider it invalid
-    return false;
+    return zipCodeRegex.test(location);
   }
 
   /**
