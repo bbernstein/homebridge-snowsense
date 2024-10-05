@@ -1,6 +1,7 @@
-import axios, { AxiosError } from 'axios';
-import {Logger} from 'homebridge';
-import {SnowSenseUnits} from './SnowSenseConfig';
+import { Logger } from 'homebridge';
+import { SnowSenseUnits } from './SnowSenseConfig';
+import { HttpClient } from './HttpClient';
+import axios from 'axios';
 
 /**
  * A single snapshot of data needed to determine if it might be snowing
@@ -71,6 +72,7 @@ export default class SnowForecastService {
 
   constructor(
     log: Logger,
+    private readonly httpClient: HttpClient,
     {
       apiKey = '',
       apiVersion = '3.0',
@@ -129,12 +131,12 @@ export default class SnowForecastService {
     }
 
     // Otherwise, assume the location is a city name
-    return await this.getLocationFromCity(location);
+    return this.getLocationFromCity(location);
   }
 
   private parseLatLong(location: string): { lat: number; lon: number } {
     const [lat, lon] = location.split(',').map(str => parseFloat(str.trim()));
-    return { lat, lon };
+    return {lat, lon};
   }
 
   /**
@@ -149,10 +151,7 @@ export default class SnowForecastService {
     this.debug(`Converting zip code ${zip} to latitude-longitude pair`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
-    const response = await axios.get<ZipCodeResponse>(geocodingApiUrl);
-    if (!response || !response.data || 'cod' in response.data) {
-      throw new Error(`No location found for zip code (${zip})`);
-    }
+    const response = await this.httpClient.get<ZipCodeResponse>(geocodingApiUrl);
     this.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
     return {lat: response.data.lat, lon: response.data.lon};
   }
@@ -169,7 +168,7 @@ export default class SnowForecastService {
     this.debug(`converting city=[${city}]`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
-    const response = await axios.get<GeocodingResponse[]>(geocodingApiUrl);
+    const response = await this.httpClient.get<GeocodingResponse[]>(geocodingApiUrl);
     if (!response.data || response.data.length === 0) {
       throw new Error(`No location found for city (${city}) *** Did you include a country code? eg "New York, NY, US" ***`);
     }
@@ -268,17 +267,20 @@ export default class SnowForecastService {
       throw new Error('URL not yet set for openweathermap');
     }
     try {
-      const response = await axios.get<OpenWeatherResponse>(this.weatherUrl);
+      const response = await this.httpClient.get<OpenWeatherResponse>(this.weatherUrl);
       return response.data;
     } catch (error) {
-      if ((error as AxiosError).isAxiosError) {
-        // This is an Axios error
-        const axiosError = error as AxiosError<{ message: string }>;
-        throw new Error(`Error getting weather from OpenWeatherMap: ${axiosError.response?.data?.message || axiosError.message}`);
-      } else {
-        // This is not an Axios error
-        throw new Error(`Unexpected error getting weather from OpenWeatherMap: ${error}`);
+      if (axios.isAxiosError(error)) {
+        if (error.status === 401) {
+          throw new Error('Invalid OpenWeatherMap API key');
+        }
+        if (error.status === 429) {
+          throw new Error('OpenWeatherMap API rate limit exceeded');
+        }
+        throw new Error(`Error getting weather from OpenWeatherMap: ${error.message}`);
       }
+      // This is not an Axios error
+      throw new Error(`Unexpected error getting weather from OpenWeatherMap: ${error}`);
     }
   }
 

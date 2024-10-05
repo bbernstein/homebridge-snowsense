@@ -1,6 +1,7 @@
 import { Logger } from 'homebridge';
 import SnowForecastService, { SnowForecast, SnowReport } from './SnowForecastService';
 import { DeviceConfig, SnowSenseUnits } from './SnowSenseConfig';
+import AxiosHttpClient from './AxiosHttpClient';
 import fs from 'fs';
 import path from 'path';
 
@@ -54,14 +55,16 @@ export class SnowWatch {
     this.storagePath = options.storagePath;
     this.historyFile = HISTORY_FILE;
     this.pastReports = this.readPastReports(options.storagePath, options.historyFile);
-    this.snowForecastService = snowForecastService ?? new SnowForecastService(this.logger, {
+    const httpClient = new AxiosHttpClient();
+    const forecastOptions = {
       apiKey: options.apiKey,
       apiVersion: options.apiVersion,
       debugOn: options.debugOn,
       location: options.location,
       units: options.units,
       apiThrottleMinutes: options.apiThrottleMinutes,
-    });
+    };
+    this.snowForecastService = snowForecastService ?? new SnowForecastService(this.logger, httpClient, forecastOptions);
   }
 
   public getFutureReports(): SnowReport[] {

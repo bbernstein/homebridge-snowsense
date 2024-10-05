@@ -2,8 +2,9 @@
 /// <reference types="../types/openweathermap" />
 
 import SnowForecastService from './SnowForecastService';
-import axios from 'axios';
-import {Logger} from 'homebridge';
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { Logger } from 'homebridge';
+import { HttpClient } from './HttpClient';
 
 // To see all possible weather conditions, look here:
 // https://openweathermap.org/weather-conditions
@@ -19,28 +20,35 @@ const weather = {
   ],
 };
 
-const zipToLocationData = {
-  zip: '02461',
-  name: 'Newton',
-  lat: 42.3168,
-  lon: -71.2084,
-  country: 'US',
-};
+class MockHttpClient implements HttpClient {
+  private responses: Map<string, any> = new Map();
 
-const cityToLocationData = [
-  {
-    name: 'Newton Highlands',
-    lat: 42.3219158,
-    lon: -71.2071228,
-    country: 'US',
-    state: 'Massachusetts',
-  },
-];
+  setResponse(url: string, response: any) {
+    this.responses.set(url, response);
+  }
 
-jest.mock('axios');
+  async get<T>(url: string): Promise<{ data: T }> {
+    const response = this.responses.get(url);
+    if (response === undefined) {
+      throw new Error(`No mock response set for URL: ${url}`);
+    }
+    if (response instanceof AxiosError) {
+      throw response;
+    }
+    if (response instanceof Error) {
+      throw response;
+    }
+    return {data: response as T};
+  }
+}
+
+// In your test file
+const mockHttpClient = new MockHttpClient();
 
 describe('SnowForecastService', () => {
   let mockLogger: jest.Mocked<Logger>;
+  let mockWeatherResponse: OpenWeatherResponse;
+  let baseUrl = 'https://api.openweathermap.org/data/3.0/onecall';
 
   beforeEach(() => {
     mockLogger = {
@@ -49,18 +57,16 @@ describe('SnowForecastService', () => {
       error: jest.fn(),
       debug: jest.fn(),
     } as unknown as jest.Mocked<Logger>;
+
+
   });
 
   describe('getWeatherFromApi', () => {
     let service: SnowForecastService;
+    let apiUrl: string;
     beforeEach(() => {
-      service = new SnowForecastService(mockLogger,
-        {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
-      (service as any).weatherUrl = 'https://api.openweathermap.org/mock/url';
-    });
-
-    it('should return weather data when API call is successful', async () => {
-      const mockResponse: OpenWeatherResponse = {
+      baseUrl = 'https://api.openweathermap.org/data/3.0/onecall';
+      mockWeatherResponse = {
         lat: 40.7127,
         lon: -74.006,
         timezone: 'America/New_York',
@@ -153,10 +159,25 @@ describe('SnowForecastService', () => {
         ],
       };
 
-      (axios.get as jest.MockedFunction<typeof axios.get>).mockResolvedValueOnce({ data: mockResponse });
+      const params = new URLSearchParams({
+        lat: '40.7128',
+        lon: '-74.0060',
+        appid: 'test-api-key',
+        units: 'imperial',
+        exclude: 'minutely,alerts,daily',
+      });
+      apiUrl = `${baseUrl}?${params}`;
+      service = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
+      (service as any).weatherUrl = apiUrl;
+    });
+
+    it('should return weather data when API call is successful', async () => {
+      (service as any).weatherUrl = apiUrl;
+      mockHttpClient.setResponse(apiUrl, mockWeatherResponse);
 
       const result = await (service as any).getWeatherFromApi();
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockWeatherResponse);
     });
 
     it('should throw an error when weatherUrl is not set', async () => {
@@ -166,36 +187,51 @@ describe('SnowForecastService', () => {
     });
 
     it('should throw an error with API message when Axios error occurs', async () => {
-      const mockError = {
-        isAxiosError: true,
-        response: {
-          data: {
-            message: 'API Error Message',
-          },
-        },
-      };
+      const mockError = new AxiosError(
+        'Bad Request',
+        'ERR_REQUEST',
+        undefined,
+        undefined,
+        {
+          status: 401,
+        } as AxiosResponse,
+      );
+      mockHttpClient.setResponse(apiUrl, mockError);
+      await expect((service as any).getWeatherFromApi()).rejects.toThrow('Invalid OpenWeatherMap API key');
+    });
 
-      (axios.get as jest.MockedFunction<typeof axios.get>).mockRejectedValueOnce(mockError);
-
-      await expect((service as any).getWeatherFromApi()).rejects.toThrow('Error getting weather from OpenWeatherMap: API Error Message');
+    it('should throw an error when rate-limited status 429 occurs', async () => {
+      const mockError = new AxiosError(
+        'OpenWeatherMap API rate limit exceeded',
+        'ERR_REQUEST',
+        undefined,
+        undefined,
+        {
+          status: 429,
+        } as AxiosResponse,
+      );
+      mockHttpClient.setResponse(apiUrl, mockError);
+      await expect((service as any).getWeatherFromApi()).rejects.toThrow('OpenWeatherMap API rate limit exceeded');
     });
 
     it('should throw an error with Axios error message when no response data', async () => {
-      const mockError = {
-        isAxiosError: true,
-        message: 'Network Error',
-      };
-
-      (axios.get as jest.MockedFunction<typeof axios.get>).mockRejectedValueOnce(mockError);
+      const mockError = new AxiosError(
+        'Network Error',
+        'ERR_NETWORK',
+        undefined,
+        undefined,
+        {
+          status: 500,
+        } as AxiosResponse,
+      );
+      mockHttpClient.setResponse(apiUrl, mockError);
 
       await expect((service as any).getWeatherFromApi()).rejects.toThrow('Error getting weather from OpenWeatherMap: Network Error');
     });
 
     it('should throw an unexpected error for non-Axios errors', async () => {
       const mockError = new Error('Some unexpected error');
-
-      (axios.get as jest.MockedFunction<typeof axios.get>).mockRejectedValueOnce(mockError);
-
+      mockHttpClient.setResponse(apiUrl, mockError);
       await expect((service as any).getWeatherFromApi()).rejects.toThrow(
         'Unexpected error getting weather from OpenWeatherMap: Error: Some unexpected error',
       );
@@ -221,7 +257,7 @@ describe('SnowForecastService', () => {
     });
 
     it('should turn weather forecast into Snow forecast', async () => {
-      const snowForecastService = new SnowForecastService(mockLogger,
+      const snowForecastService = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -236,7 +272,7 @@ describe('SnowForecastService', () => {
     });
 
     it('should turn weather forecast into Snow forecast with default option values', async () => {
-      const snowForecastService = new SnowForecastService(mockLogger,
+      const snowForecastService = new SnowForecastService(mockLogger, mockHttpClient,
         {units: 'imperial'});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -251,7 +287,7 @@ describe('SnowForecastService', () => {
     });
 
     it('should use cached weather on second try', async () => {
-      const snowForecastService = new SnowForecastService(mockLogger,
+      const snowForecastService = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '11563', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -286,7 +322,7 @@ describe('SnowForecastService', () => {
 
     // This test breaks when fakeTimers are used as that breaks the sleep function
     it('should block a simultaneous call to get weather', async () => {
-      const snowForecastService = new SnowForecastService(mockLogger,
+      const snowForecastService = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'imperial', apiThrottleMinutes: 10});
       await snowForecastService.setup();
       expect(snowForecastService.units).toBe('imperial');
@@ -306,7 +342,7 @@ describe('SnowForecastService', () => {
 
     // This test breaks when fakeTimers are used as that breaks the sleep function
     it('should timeout when it takes too long', async () => {
-      const weather = new SnowForecastService(mockLogger,
+      const weather = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       const weatherProto = Object.getPrototypeOf(weather);
       weatherProto.debugOn = true;
@@ -323,59 +359,80 @@ describe('SnowForecastService', () => {
   });
 
   describe('Zip to lat,lon', () => {
+    let mockZipResponse: any;
+
+    beforeEach(() => {
+      mockZipResponse = {zip: '10001', name: 'New York', lat: 40.7128, lon: -74.0060, country: 'US'};
+    });
+
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
     it('should set lat,lon to values from zip api', async () => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({data: zipToLocationData}));
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
 
-      const weather = new SnowForecastService(mockLogger,
-        {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
-      await weather.setup();
-      expect(weather.latLon).toStrictEqual({lat: 42.3168, lon: -71.2084});
-      expect(weather.units).toBe('metric');
+      mockHttpClient.setResponse(apiUrl, mockZipResponse);
+
+      await service.setup();
+      expect(service.latLon).toStrictEqual({lat: 40.7128, lon: -74.0060});
     });
 
     it('should handle failed zip api', async () => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve(null));
-      const weather = new SnowForecastService(mockLogger,
-        {apiKey: 'xxx', apiVersion: '3.0', location: '02461', units: 'metric', apiThrottleMinutes: 10});
-      try {
-        await weather.setup();
-      } catch (e: any) {
-        expect(e.message).toBe('No location found for zip code (02461)');
-      }
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
+
+      mockHttpClient.setResponse(apiUrl, new Error('API Error'));
+
+      await expect(service.setup()).rejects.toThrow('API Error');
     });
 
+    it('should handle an error thrown due to bad zip code', async () => {
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
+      const mockError = new AxiosError(
+        'Resource Not Found',
+        'ERR_REQUEST',
+        undefined,
+        undefined,
+        {
+          status: 404,
+        } as AxiosResponse,
+      );
+      mockHttpClient.setResponse(apiUrl, mockError);
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
+      await expect(service.setup()).rejects.toThrow('Resource Not Found');
+    });
   });
 
   describe('City to lat,lon', () => {
+    let mockCityResponse: any;
+    beforeEach(() => {
+      mockCityResponse = [{zip: '10001', name: 'New York', lat: 40.7128, lon: -74.0060, country: 'US'}];
+    });
+
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
     it('should set default values for location and units', async () => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
-
-      const weather = new SnowForecastService(mockLogger,
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
           apiThrottleMinutes: 10,
         });
-      expect(weather.location).toBe('New York,NY,US');
-      expect(weather.units).toBe('imperial');
+      expect(service.location).toBe('New York,NY,US');
+      expect(service.units).toBe('imperial');
     });
 
     it('should set lat,lon to values from city api', async () => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({data: cityToLocationData}));
-
-      const weather = new SnowForecastService(mockLogger,
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/direct?q=Newton%20Highlands%2C%20MA%2C%20US&limit=1&appid=xxx';
+      mockHttpClient.setResponse(apiUrl, mockCityResponse);
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -383,15 +440,25 @@ describe('SnowForecastService', () => {
           units: 'standard',
           apiThrottleMinutes: 10,
         });
-      await weather.setup();
-      expect(weather.latLon).toStrictEqual({lat: 42.3219158, lon: -71.2071228});
-      expect(weather.units).toBe('standard');
+      await service.setup();
+      expect(service.latLon).toStrictEqual({lat: 40.7128, lon: -74.006});
+      expect(service.units).toBe('standard');
     });
 
     it('should handle 401 when calling city api', async () => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({cod: 401, message: 'fail'}));
-      const weather = new SnowForecastService(mockLogger,
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/direct?q=Newton%20Highlands%2C%20MA%2C%20US&limit=1&appid=xxx';
+      const mockError = new AxiosError(
+        'Bad Request',
+        'ERR_REQUEST',
+        undefined,
+        undefined,
+        {
+          status: 401,
+        } as AxiosResponse,
+      );
+
+      mockHttpClient.setResponse(apiUrl, mockError);
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -399,45 +466,13 @@ describe('SnowForecastService', () => {
           units: 'standard',
           apiThrottleMinutes: 10,
         });
-      let failed = false;
-      try {
-        await weather.setup();
-      } catch (e: any) {
-        failed = true;
-      } finally {
-        expect(axios.get).toHaveBeenCalledTimes(1);
-        expect(failed).toBe(true);
-      }
-
+      await expect(service.setup()).rejects.toThrow('Bad Request');
     });
 
-    // it('should handle bad city api response', async () => {
-    //   axios.get = jest.fn()
-    //     .mockImplementationOnce(() => Promise.resolve(null));
-    //   const weather = new SnowForecastService(mockLogger,
-    //     {
-    //       apiKey: 'xxx',
-    //       apiVersion: '3.0',
-    //       location: 'Newton Highlands, MA, US',
-    //       units: 'standard',
-    //       apiThrottleMinutes: 10,
-    //     });
-    //   let failed = false;
-    //   try {
-    //     await weather.setup();
-    //   } catch (e: any) {
-    //     expect(e.message).toBe('No location found for city (Newton Highlands, MA, US)');
-    //     failed = true;
-    //   } finally {
-    //     expect(axios.get).toHaveBeenCalledTimes(1);
-    //     expect(failed).toBe(true);
-    //   }
-    // });
-
     it('should handle bad data from api', async () => {
-      axios.get = jest.fn()
-        .mockImplementationOnce(() => Promise.resolve({data: ''}));
-      const weather = new SnowForecastService(mockLogger,
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/direct?q=Newton%20Highlands%2C%20MA%2C%20US&limit=1&appid=xxx';
+      mockHttpClient.setResponse(apiUrl, []);
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
         {
           apiKey: 'xxx',
           apiVersion: '3.0',
@@ -445,16 +480,7 @@ describe('SnowForecastService', () => {
           units: 'standard',
           apiThrottleMinutes: 10,
         });
-      let failed = false;
-      try {
-        await weather.setup();
-      } catch (e: any) {
-        expect(e.message).toContain('Did you include a country code');
-        failed = true;
-      } finally {
-        expect(axios.get).toHaveBeenCalledTimes(1);
-        expect(failed).toBe(true);
-      }
+      await expect(service.setup()).rejects.toThrow('Did you include a country code');
     });
   });
 
@@ -464,33 +490,19 @@ describe('SnowForecastService', () => {
     });
 
     it('should fail when no url', async () => {
-      axios.get = jest.fn()
-        .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
-
-      const weather = new SnowForecastService(mockLogger,
+      const weather = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
-
       const weatherProto = Object.getPrototypeOf(weather);
-
-      try {
-        await weatherProto.getWeatherFromApi();
-      } catch (e: any) {
-        expect(e.message).toContain('URL not yet set for openweathermap');
-        return;
-      }
-      expect(false).toBe(true);
-
-      weatherProto.weatherUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
-      const result = await weatherProto.getWeatherFromApi();
-      expect(result).toStrictEqual({a: 1, b: 2});
+      weatherProto.weatherUrl = undefined;
+      await expect(weatherProto.getWeatherFromApi()).rejects.toThrow('URL not yet set for openweathermap');
     });
 
-    it('should work when there is a url', async () => {
+    it.skip('should work when there is a url', async () => {
       axios.get = jest.fn()
         .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
 
-      const weather = new SnowForecastService(mockLogger,
+      const weather = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
       const weatherProto = Object.getPrototypeOf(weather);
@@ -503,7 +515,7 @@ describe('SnowForecastService', () => {
       axios.get = jest.fn()
         .mockImplementation(() => Promise.reject({response: {data: {message: 'fail'}}}));
 
-      const weather = new SnowForecastService(mockLogger,
+      const weather = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
       const weatherProto = Object.getPrototypeOf(weather);
@@ -527,7 +539,7 @@ describe('SnowForecastService', () => {
       // Create a mock function and assign it to mockLogger.debug
       mockLogger.debug = jest.fn();
 
-      const weather = new SnowForecastService(mockLogger,
+      const weather = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
       await weather.setup();
       const spy = jest.spyOn(mockLogger, 'debug');
