@@ -20,6 +20,10 @@ const weather = {
   ],
 };
 
+function createMockAxiosError(message: string, status?: number): AxiosError {
+  return new AxiosError(message, 'ERR_NETWORK', undefined, undefined, status ? { status } as AxiosResponse : undefined);
+}
+
 class MockHttpClient implements HttpClient {
   private responses: Map<string, any> = new Map();
 
@@ -187,43 +191,19 @@ describe('SnowForecastService', () => {
     });
 
     it('should throw an error with API message when Axios error occurs', async () => {
-      const mockError = new AxiosError(
-        'Bad Request',
-        'ERR_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 401,
-        } as AxiosResponse,
-      );
+      const mockError = createMockAxiosError('Bad Request', 401);
       mockHttpClient.setResponse(apiUrl, mockError);
       await expect((service as any).getWeatherFromApi()).rejects.toThrow('Invalid OpenWeatherMap API key');
     });
 
     it('should throw an error when rate-limited status 429 occurs', async () => {
-      const mockError = new AxiosError(
-        'OpenWeatherMap API rate limit exceeded',
-        'ERR_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 429,
-        } as AxiosResponse,
-      );
+      const mockError = createMockAxiosError('OpenWeatherMap API rate limit exceeded', 429);
       mockHttpClient.setResponse(apiUrl, mockError);
       await expect((service as any).getWeatherFromApi()).rejects.toThrow('OpenWeatherMap API rate limit exceeded');
     });
 
     it('should throw an error with Axios error message when no response data', async () => {
-      const mockError = new AxiosError(
-        'Network Error',
-        'ERR_NETWORK',
-        undefined,
-        undefined,
-        {
-          status: 500,
-        } as AxiosResponse,
-      );
+      const mockError = createMockAxiosError('Network Error', 500);
       mockHttpClient.setResponse(apiUrl, mockError);
 
       await expect((service as any).getWeatherFromApi()).rejects.toThrow('Error getting weather from OpenWeatherMap: Network Error');
@@ -394,30 +374,14 @@ describe('SnowForecastService', () => {
       const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
       const service = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
-      const mockError = new AxiosError(
-        'Bad Request',
-        'ERR_BAD_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 401,
-        } as AxiosResponse,
-      );
+      const mockError = createMockAxiosError('Bad Request', 401);
       mockHttpClient.setResponse(apiUrl, mockError);
       await expect(service.setup()).rejects.toThrow('Error 401 getting location from zip code \'10001\': Bad Request');
     });
 
     it('should handle an error thrown due to bad zip code', async () => {
       const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
-      const mockError = new AxiosError(
-        'Resource Not Found',
-        'ERR_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 404,
-        } as AxiosResponse,
-      );
+      const mockError = createMockAxiosError('Resource Not Found', 404);
       mockHttpClient.setResponse(apiUrl, mockError);
       const service = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
@@ -426,13 +390,8 @@ describe('SnowForecastService', () => {
 
     it('should handle an error thrown due to bad zip code and undefined response', async () => {
       const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
-      const mockError = new AxiosError(
-        'xxx',
-        'XXX',
-        undefined,
-        undefined,
-        undefined,
-      );
+      // don't use the mock creator for this since we need undefined response
+      const mockError = createMockAxiosError('xxx');
       mockHttpClient.setResponse(apiUrl, mockError);
       const service = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
@@ -479,16 +438,7 @@ describe('SnowForecastService', () => {
 
     it('should handle 401 when calling city api', async () => {
       const apiUrl = 'https://api.openweathermap.org/geo/1.0/direct?q=Newton%20Highlands%2C%20MA%2C%20US&limit=1&appid=xxx';
-      const mockError = new AxiosError(
-        'Bad Request',
-        'ERR_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 401,
-        } as AxiosResponse,
-      );
-
+      const mockError = createMockAxiosError('Bad Request', 401);
       mockHttpClient.setResponse(apiUrl, mockError);
       const service = new SnowForecastService(mockLogger, mockHttpClient,
         {
