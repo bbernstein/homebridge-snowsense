@@ -5,14 +5,14 @@ import {
   DynamicPlatformPlugin,
   Logger,
   PlatformAccessory,
+  PlatformConfig,
   Service,
 } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { IsSnowyAccessory } from './platformAccessory';
-import { SnowWatch } from './SnowWatch';
-import { SnowSenseConfig, upgradeConfigs } from './SnowSenseConfig';
-import { PlatformConfig } from 'homebridge/lib/bridgeService';
+import {HISTORY_FILE, SnowWatch} from './SnowWatch';
+import {DeviceConfig, SnowSenseConfig, upgradeConfigs} from './SnowSenseConfig';
 import { debug } from 'util';
 
 /**
@@ -29,7 +29,9 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
   public accessories: PlatformAccessory[] = [];
   public snowyAccessories: IsSnowyAccessory[] = [];
   public readonly forecastFrequencyMillis = 1000 * 60 * 5;
-  public readonly debugOn: boolean = false;
+  public readonly debugOn?: boolean = false;
+  public watcher: SnowWatch | undefined;
+  public config: PlatformConfig;
 
   constructor(
     public readonly log: Logger,
@@ -61,39 +63,52 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       this.discoverDevices(config);
       this.startWatchingWeather(config).then();
     });
+
+    this.config = config;
+  }
+
+  public async getWatcher(): Promise<SnowWatch> {
+    if (!this.watcher) {
+      await this.startWatchingWeather(this.platformConfig as SnowSenseConfig);
+    }
+    return this.watcher as SnowWatch;
   }
 
   public async startWatchingWeather(config: SnowSenseConfig) {
-    await SnowWatch.init(this.log, {
-      apiKey: config.apiKey,
-      apiVersion: config.apiVersion,
-      debugOn: config.debugOn,
-      location: config.location,
-      units: config.units,
-      apiThrottleMinutes: config.apiThrottleMinutes || 15,
-      coldPrecipitationThreshold: config.coldPrecipitationThreshold,
-      onlyWhenCold: config.onlyWhenCold,
-      coldTemperatureThreshold: config.coldTemperatureThreshold,
-      storagePath: this.api.user.storagePath(),
-    });
-    await this.watchWeather();
+    if (!this.watcher) {
+      this.watcher = new SnowWatch(this.log, {
+        apiKey: config.apiKey,
+        apiVersion: config.apiVersion,
+        debugOn: config.debugOn,
+        location: config.location,
+        units: config.units,
+        apiThrottleMinutes: config.apiThrottleMinutes || 15,
+        coldPrecipitationThreshold: config.coldPrecipitationThreshold,
+        onlyWhenCold: config.onlyWhenCold,
+        coldTemperatureThreshold: config.coldTemperatureThreshold,
+        storagePath: this.api.user.storagePath(),
+        historyFile: HISTORY_FILE,
+      });
+    }
+    setImmediate(this.watchWeather.bind(this));
   }
 
-  private static async updateAccessories(that: SnowSensePlatform) {
-    const watcher = SnowWatch.getInstance();
+  async updateAccessories() {
+    const watcher = await this.getWatcher();
     try {
       await watcher.updatePredictionStatus();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      that.log.error(`Error getting updated weather: ${e.message}`);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        this.log.error(`Error getting updated weather: ${e.message}`);
+      }
       return;
     }
 
     // tell all the accessories to update their values
-    that.snowyAccessories.forEach((snowyAccessory) => {
+    this.snowyAccessories.forEach((snowyAccessory) => {
       debug('device:', snowyAccessory.accessory.context.device);
       const service = snowyAccessory.accessory.getService(
-        that.Service.OccupancySensor,
+        this.Service.OccupancySensor,
       );
       if (service) {
         const newValue = watcher.snowSensorValue(
@@ -104,23 +119,26 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private debug(message: string, ...parameters: any[]): void {
+  private debug(message: string, ...parameters: unknown[]): void {
     if (this.debugOn) {
       this.log.debug(message, ...parameters);
     }
   }
 
-  private async watchWeather() {
-    await SnowSensePlatform.updateAccessories(this);
+  makeUuidForDevice(device: DeviceConfig): string {
+    return this.api.hap.uuid.generate('SNOWSENSE-' + device.displayName);
+  }
+
+  async watchWeather() {
+    await this.updateAccessories();
     this.debug(
       `Updating weather (first time). frequency: ${this.forecastFrequencyMillis}`,
     );
-    await setInterval(async () => {
+    setInterval(async () => {
       this.debug(
         `Updating weather (repeating). frequency: ${this.forecastFrequencyMillis}`,
       );
-      await SnowSensePlatform.updateAccessories(this);
+      await this.updateAccessories();
     }, this.forecastFrequencyMillis);
   }
 
@@ -172,9 +190,7 @@ export class SnowSensePlatform implements DynamicPlatformPlugin {
       if (!device.displayName) {
         device.displayName = 'Snowy-' + Math.random().toString(36).substring(7);
       }
-      const uuid = this.api.hap.uuid.generate(
-        'SNOWSENSE-' + device.displayName,
-      );
+      const uuid = this.makeUuidForDevice(device);
       const existingAccessory = this.accessories.find(
         (accessory) => accessory.UUID === uuid,
       );

@@ -14,7 +14,7 @@ export interface SnowSenseConfig extends PlatformConfig {
   apiKey: string;
   apiVersion: string;
   apiThrottleMinutes: number;
-  debugOn: boolean;
+  debugOn?: boolean;
   units?: SnowSenseUnits;
   location: string;
   coldPrecipitationThreshold?: number;
@@ -34,9 +34,7 @@ export interface SnowSenseConfig extends PlatformConfig {
   key?: string;
 }
 
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function deepEqual(obj1: any, obj2: any): boolean {
+export function deepEqual(obj1: unknown, obj2: unknown): boolean {
   // If both are null or undefined, they're equal
   if (obj1 === null && obj2 === null) {
     return true;
@@ -88,7 +86,7 @@ export function deepEqual(obj1: any, obj2: any): boolean {
     return false;
   }
   for (const key of keys1) {
-    if (!deepEqual(obj1[key], obj2[key])) {
+    if (!deepEqual((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key])) {
       return false;
     }
   }
@@ -175,7 +173,7 @@ export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logg
       const configContents = readFileSync(configPath, 'utf8');
       const allConfigs = JSON.parse(configContents);
 
-      // find the platform entry matching this platform
+      // find the platform entry matching this platform, allowing 'any' as configs have changed over time
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const platformIndex = allConfigs.platforms.findIndex((c: any) => c.platform === config.platform);
       if (platformIndex >= 0) {
@@ -183,9 +181,10 @@ export function upgradeConfigs(config: SnowSenseConfig, configPath: string, logg
         allConfigs.platforms[platformIndex] = config;
         writeFileSync(configPath, JSON.stringify(allConfigs, null, 4), 'utf8');
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      logger.error(`Error updating config file: ${e}`);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        logger.error(`Error updating config file: ${e}`);
+      }
     }
   }
 }
