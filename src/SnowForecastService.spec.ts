@@ -380,14 +380,31 @@ describe('SnowForecastService', () => {
       expect(service.latLon).toStrictEqual({lat: 40.7128, lon: -74.0060});
     });
 
+    it('should handle non-axios error from zip api', async () => {
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
+      const mockError = new Error('unknown error');
+      mockHttpClient.setResponse(apiUrl, mockError);
+      await expect(service.setup()).rejects.toThrow('Unexpected error getting location from zip code \'10001\': Error: unknown error');
+    });
+
+
     it('should handle failed zip api', async () => {
       const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
       const service = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
-
-      mockHttpClient.setResponse(apiUrl, new Error('API Error'));
-
-      await expect(service.setup()).rejects.toThrow('API Error');
+      const mockError = new AxiosError(
+        'Bad Request',
+        'ERR_BAD_REQUEST',
+        undefined,
+        undefined,
+        {
+          status: 401,
+        } as AxiosResponse,
+      );
+      mockHttpClient.setResponse(apiUrl, mockError);
+      await expect(service.setup()).rejects.toThrow('Error 401 getting location from zip code \'10001\': Bad Request');
     });
 
     it('should handle an error thrown due to bad zip code', async () => {
@@ -404,7 +421,22 @@ describe('SnowForecastService', () => {
       mockHttpClient.setResponse(apiUrl, mockError);
       const service = new SnowForecastService(mockLogger, mockHttpClient,
         {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
-      await expect(service.setup()).rejects.toThrow('Resource Not Found');
+      await expect(service.setup()).rejects.toThrow('No location found for zip code \'10001\'');
+    });
+
+    it('should handle an error thrown due to bad zip code and undefined response', async () => {
+      const apiUrl = 'https://api.openweathermap.org/geo/1.0/zip?zip=10001&limit=1&appid=xxx';
+      const mockError = new AxiosError(
+        'xxx',
+        'XXX',
+        undefined,
+        undefined,
+        undefined,
+      );
+      mockHttpClient.setResponse(apiUrl, mockError);
+      const service = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '10001', units: 'imperial', apiThrottleMinutes: 10});
+      await expect(service.setup()).rejects.toThrow('Error undefined getting location from zip code \'10001\': xxx');
     });
   });
 
@@ -498,17 +530,11 @@ describe('SnowForecastService', () => {
       await expect(weatherProto.getWeatherFromApi()).rejects.toThrow('URL not yet set for openweathermap');
     });
 
-    it.skip('should work when there is a url', async () => {
-      axios.get = jest.fn()
-        .mockImplementation(() => Promise.resolve({data: {a: 1, b: 2}}));
-
-      const weather = new SnowForecastService(mockLogger, mockHttpClient,
-        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
-      await weather.setup();
-      const weatherProto = Object.getPrototypeOf(weather);
-      weatherProto.weatherUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
-      const result = await weatherProto.getWeatherFromApi();
-      expect(result).toStrictEqual({a: 1, b: 2});
+    it('should work when there is a url', async () => {
+      const apiUrl = 'https://openweathermap.org/data/2.5/onecall?lat=0&lon=0&units=standard&appid=xxx';
+      mockHttpClient.setResponse(apiUrl, {a: 1, b: 2});
+      const result = await mockHttpClient.get(apiUrl);
+      expect(result).toStrictEqual({data: {a: 1, b: 2}});
     });
 
     it('should fail when api call throws error', async () => {

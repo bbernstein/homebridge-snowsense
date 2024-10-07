@@ -7,7 +7,7 @@ jest.mock('homebridge');
 
 describe('SnowSenseConfig', () => {
   describe('deepEqual', () => {
-    test('primitive types', () => {
+    it('should compare primitive types', () => {
       expect(deepEqual(1, 1)).toBe(true);
       expect(deepEqual(1, 2)).toBe(false);
       expect(deepEqual('a', 'a')).toBe(true);
@@ -19,21 +19,21 @@ describe('SnowSenseConfig', () => {
       expect(deepEqual(null, undefined)).toBe(false);
     });
 
-    test('simple arrays', () => {
+    it('should compare simple arrays', () => {
       expect(deepEqual([1, 2, 3], [1, 2, 3])).toBe(true);
       expect(deepEqual([1, 2, 3], [1, 2, 4])).toBe(false);
       expect(deepEqual([1, 2, 3], [1, 2])).toBe(false);
       expect(deepEqual([], [])).toBe(true);
     });
 
-    test('nested arrays', () => {
+    it('should compare nested arrays', () => {
       expect(deepEqual([1, [2, 3]], [1, [2, 3]])).toBe(true);
       expect(deepEqual([1, [2, 3]], [1, [2, 4]])).toBe(false);
       expect(deepEqual([1, [2, [3]]], [1, [2, [3]]])).toBe(true);
       expect(deepEqual([1, [2, [3]]], [1, [2, [4]]])).toBe(false);
     });
 
-    test('simple objects', () => {
+    it('should compare simple objects', () => {
       expect(deepEqual({a: 1, b: 2}, {a: 1, b: 2})).toBe(true);
       expect(deepEqual({a: 1, b: 2}, {b: 2, a: 1})).toBe(true);
       expect(deepEqual({a: 1, b: 2}, {a: 1, b: 3})).toBe(false);
@@ -41,41 +41,41 @@ describe('SnowSenseConfig', () => {
       expect(deepEqual({}, {})).toBe(true);
     });
 
-    test('nested objects', () => {
+    it('should compare nested objects', () => {
       expect(deepEqual({a: 1, b: {c: 2}}, {a: 1, b: {c: 2}})).toBe(true);
       expect(deepEqual({a: 1, b: {c: 2}}, {a: 1, b: {c: 3}})).toBe(false);
       expect(deepEqual({a: 1, b: {c: {d: 3}}}, {a: 1, b: {c: {d: 3}}})).toBe(true);
       expect(deepEqual({a: 1, b: {c: {d: 3}}}, {a: 1, b: {c: {d: 4}}})).toBe(false);
     });
 
-    test('mixed objects and arrays', () => {
+    it('should compare mixed objects and arrays', () => {
       expect(deepEqual({a: [1, 2], b: {c: 3}}, {a: [1, 2], b: {c: 3}})).toBe(true);
       expect(deepEqual({a: [1, 2], b: {c: 3}}, {a: [1, 3], b: {c: 3}})).toBe(false);
       expect(deepEqual([{a: 1}, {b: 2}], [{a: 1}, {b: 2}])).toBe(true);
       expect(deepEqual([{a: 1}, {b: 2}], [{a: 1}, {b: 3}])).toBe(false);
     });
 
-    test('array vs object', () => {
+    it('should compare array vs object', () => {
       expect(deepEqual([1, 2, 3], {0: 1, 1: 2, 2: 3})).toBe(false);
       expect(deepEqual({length: 3, 0: 1, 1: 2, 2: 3}, [1, 2, 3])).toBe(false);
     });
 
-    test('empty array vs empty object', () => {
+    it('should compare empty array vs empty object', () => {
       expect(deepEqual([], {})).toBe(false);
     });
 
-    test('object with array-like keys', () => {
+    it('should compare object with array-like keys', () => {
       expect(deepEqual({'0': 'a', '1': 'b', length: 2}, ['a', 'b'])).toBe(false);
     });
 
-    test('functions', () => {
+    it('should compare functions', () => {
       const func1 = () => 1;
       const func2 = () => 1;
       expect(deepEqual(func1, func1)).toBe(true);
       expect(deepEqual(func1, func2)).toBe(false);
     });
 
-    test('date objects', () => {
+    it('should compare date objects', () => {
       const date1 = new Date('2023-01-01');
       const date2 = new Date('2023-01-01');
       const date3 = new Date('2023-01-02');
@@ -83,18 +83,18 @@ describe('SnowSenseConfig', () => {
       expect(deepEqual(date1, date3)).toBe(false);
     });
 
-    test('regexp objects', () => {
+    it('should compare regexp objects', () => {
       expect(deepEqual(/abc/, /abc/)).toBe(true);
       expect(deepEqual(/abc/, /def/)).toBe(false);
     });
 
-    test('null and undefined in objects', () => {
+    it('should compare null and undefined in objects', () => {
       expect(deepEqual({a: null}, {a: null})).toBe(true);
       expect(deepEqual({a: undefined}, {a: undefined})).toBe(true);
       expect(deepEqual({a: null}, {a: undefined})).toBe(false);
     });
 
-    test('objects with prototype properties', () => {
+    it('should compare objects with prototype properties', () => {
       const proto = {b: 2};
       const obj1 = Object.create(proto);
       const obj2 = Object.create(proto);
@@ -130,17 +130,17 @@ describe('SnowSenseConfig', () => {
       mockReadFileSync.mockReturnValue(JSON.stringify({platforms: [mockConfig]}));
     });
 
-    test('should return early if no configPath provided', () => {
+    it('should return early if no configPath provided', () => {
       upgradeConfigs(mockConfig, '', mockLogger);
       expect(mockLogger.info).toHaveBeenCalledWith('upgradeConfigs, no configPath provided, returning');
     });
 
-    test('should set debugOn to false if undefined', () => {
+    it('should set debugOn to false if undefined', () => {
       upgradeConfigs(mockConfig, 'path', mockLogger);
       expect(mockConfig.debugOn).toBe(false);
     });
 
-    test('should create sensors from legacy config', () => {
+    it('should create sensors from legacy config', () => {
       mockConfig.name = 'Legacy Sensor';
       mockConfig.hoursAfterSnowIsSnowy = 2;
       mockConfig.hoursBeforeSnowIsSnowy = 1;
@@ -156,7 +156,7 @@ describe('SnowSenseConfig', () => {
       }]);
     });
 
-    test('should update sensors if they exist', () => {
+    it('should update sensors if they exist', () => {
       mockConfig.sensors = [{
         displayName: '',
         hoursBeforeSnowIsSnowy: 1,
@@ -169,7 +169,7 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.sensors![0].displayName).toMatch(/^Snowy-/);
     });
 
-    test('should update apiKey and apiVersion from legacy key', () => {
+    it('should update apiKey and apiVersion from legacy key', () => {
       mockConfig.key = 'oldApiKey';
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
@@ -179,12 +179,12 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.key).toBeUndefined();
     });
 
-    test('should set apiVersion to 3.0 if not defined', () => {
+    it('should set apiVersion to 3.0 if not defined', () => {
       upgradeConfigs(mockConfig, 'path', mockLogger);
       expect(mockConfig.apiVersion).toBe('3.0');
     });
 
-    test('should update location from latitude and longitude', () => {
+    it('should update location from latitude and longitude', () => {
       mockConfig.latitude = 40.7128;
       mockConfig.longitude = -74.0060;
 
@@ -195,7 +195,7 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.longitude).toBeUndefined();
     });
 
-    test('should set units to imperial if invalid', () => {
+    it('should set units to imperial if invalid', () => {
       mockConfig.units = 'invalid' as SnowSenseUnits;
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
@@ -203,7 +203,7 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.units).toBe('imperial');
     });
 
-    test('should update hoursBeforeSnowIsSnowy from beforeSnowStarts', () => {
+    it('should update hoursBeforeSnowIsSnowy from beforeSnowStarts', () => {
       mockConfig.beforeSnowStarts = 5;
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
@@ -212,7 +212,7 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.beforeSnowStarts).toBeUndefined();
     });
 
-    test('should update hoursAfterSnowIsSnowy from afterSnowStops', () => {
+    it('should update hoursAfterSnowIsSnowy from afterSnowStops', () => {
       mockConfig.afterSnowStops = 6;
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
@@ -221,7 +221,7 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.afterSnowStops).toBeUndefined();
     });
 
-    test('should update apiThrottleMinutes from forecastFrequency', () => {
+    it('should update apiThrottleMinutes from forecastFrequency', () => {
       mockConfig.forecastFrequency = 30;
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
@@ -230,7 +230,7 @@ describe('SnowSenseConfig', () => {
       expect(mockConfig.forecastFrequency).toBeUndefined();
     });
 
-    test('should write updated config to file', () => {
+    it('should write updated config to file', () => {
       mockConfig.key = 'oldApiKey';  // This will trigger a config change
 
       upgradeConfigs(mockConfig, 'path', mockLogger);
@@ -238,7 +238,7 @@ describe('SnowSenseConfig', () => {
       expect(mockWriteFileSync).toHaveBeenCalledWith('path', expect.any(String), 'utf8');
     });
 
-    test('should handle file read/write errors', () => {
+    it('should handle file read/write errors', () => {
       mockReadFileSync.mockImplementation(() => {
         throw new Error('Read error');
       });
@@ -248,7 +248,7 @@ describe('SnowSenseConfig', () => {
       expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error updating config file'));
     });
 
-    test('should not write file if no changes made', () => {
+    it('should not write file if no changes made', () => {
       // Pre-set debugOn to avoid it being counted as a change
       mockConfig.debugOn = false;
       mockConfig.apiVersion = '3.0';
@@ -258,7 +258,7 @@ describe('SnowSenseConfig', () => {
       expect(mockWriteFileSync).not.toHaveBeenCalled();
     });
 
-    test('should set debugOn to false without triggering a write', () => {
+    it('should set debugOn to false without triggering a write', () => {
       // Create a new config object without debugOn
       const configWithoutDebugOn: SnowSenseConfig = {
         ...mockConfig,

@@ -151,9 +151,21 @@ export default class SnowForecastService {
     this.debug(`Converting zip code ${zip} to latitude-longitude pair`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
-    const response = await this.httpClient.get<ZipCodeResponse>(geocodingApiUrl);
-    this.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
-    return {lat: response.data.lat, lon: response.data.lon};
+    try {
+      const response = await this.httpClient.get<ZipCodeResponse>(geocodingApiUrl);
+      this.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
+      return {lat: response.data.lat, lon: response.data.lon};
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error(`No location found for zip code '${zip}'`);
+        }
+        throw new Error(`Error ${error.response?.status} getting location from zip code '${zip}': ${error.message}`);
+      }
+      // This is not an Axios error
+      throw new Error(`Unexpected error getting location from zip code '${zip}': ${error}`);
+    }
+
   }
 
   /**

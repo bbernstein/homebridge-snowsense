@@ -87,7 +87,7 @@ describe('SnowSensePlatform', () => {
     jest.clearAllMocks();
   });
 
-  test('constructor initializes correctly', () => {
+  it('should initialize correctly in constructor', () => {
     expect(platform.log).toBe(mockLog);
     expect(platform.platformConfig).toBe(mockConfig);
     expect(platform.api).toBe(mockApi);
@@ -119,14 +119,14 @@ describe('SnowSensePlatform', () => {
     });
   });
 
-  test('configureAccessory adds accessory to accessories array', () => {
+  it('should add accessory to accessories array', () => {
     const mockAccessory = {} as PlatformAccessory;
     platform.configureAccessory(mockAccessory);
     expect(platform.accessories).toContain(mockAccessory);
   });
 
   describe('discoverDevices', () => {
-    test('discoverDevices creates and registers new accessories', () => {
+    it('should create and register new accessories', () => {
       const mockDevice = {displayName: 'Test Device'};
       platform.platformConfig.sensors = [mockDevice];
 
@@ -326,7 +326,7 @@ describe('SnowSensePlatform', () => {
   });
 
   describe('updateAccessories', () => {
-    test('updateAccessories updates all accessories', async () => {
+    it('should update all accessories', async () => {
       const mockAccessory1 = {
         displayName: 'Device 1',
         UUID: 'uuid1',
@@ -398,7 +398,7 @@ describe('SnowSensePlatform', () => {
     beforeEach(() => {
       jest.useFakeTimers();
     });
-    test('watchWeather sets up interval for updating accessories', async () => {
+    it('should set up interval for updating accessories', async () => {
       const updateAccessoriesSpy = jest.spyOn(platform, 'updateAccessories').mockResolvedValue();
 
       await platform.watchWeather();
@@ -412,7 +412,7 @@ describe('SnowSensePlatform', () => {
   });
 
   describe('simulate DID_FINISH_LAUNCHING', () => {
-    test('calls discoverDevices and startWatchingWeather when DID_FINISH_LAUNCHING is triggered', () => {
+    it('should call discoverDevices and startWatchingWeather when DID_FINISH_LAUNCHING is triggered', () => {
       // Spy on the methods we expect to be called
       const discoverDevicesSpy = jest.spyOn(platform, 'discoverDevices').mockImplementation();
       const startWatchingWeatherSpy = jest.spyOn(platform, 'startWatchingWeather').mockResolvedValue();
