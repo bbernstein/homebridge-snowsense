@@ -5,6 +5,7 @@ import SnowForecastService from './SnowForecastService';
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import { Logger } from 'homebridge';
 import { HttpClient } from './HttpClient';
+import { clearCache } from './cacheDecorator';
 
 // To see all possible weather conditions, look here:
 // https://openweathermap.org/weather-conditions
@@ -21,7 +22,7 @@ const weather = {
 };
 
 function createMockAxiosError(message: string, status?: number): AxiosError {
-  return new AxiosError(message, 'ERR_NETWORK', undefined, undefined, status ? { status } as AxiosResponse : undefined);
+  return new AxiosError(message, 'ERR_NETWORK', undefined, undefined, status ? {status} as AxiosResponse : undefined);
 }
 
 class MockHttpClient implements HttpClient {
@@ -319,22 +320,21 @@ describe('SnowForecastService', () => {
 
       expect(forecast).toStrictEqual(forecast1);
     });
+  });
 
-    // This test breaks when fakeTimers are used as that breaks the sleep function
-    it('should timeout when it takes too long', async () => {
-      const weather = new SnowForecastService(mockLogger, mockHttpClient,
-        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
-      const weatherProto = Object.getPrototypeOf(weather);
-      weatherProto.debugOn = true;
-      weatherProto.logger = console;
-      weatherProto.fetchLock = true;
-      weatherProto.lockTimeoutMillis = 20;
-      try {
-        await weatherProto.getSnowForecast();
-        expect(true).toBe(false);
-      } catch (e: any) {
-        expect(e.message).toBe('Weather fetch is locked');
-      }
+  describe('Test missing params', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should fail when weatherUrl is missing', async () => {
+      const snowForecastService = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'imperial', apiThrottleMinutes: 10});
+      await snowForecastService.setup();
+      expect(snowForecastService.units).toBe('imperial');
+      const snowForecastProto = Object.getPrototypeOf(snowForecastService);
+      snowForecastProto.weatherUrl = undefined;
+      await expect(snowForecastProto.getWeatherFromApi()).rejects.toThrow('URL not yet set for openweathermap');
     });
   });
 
@@ -478,6 +478,17 @@ describe('SnowForecastService', () => {
       const weatherProto = Object.getPrototypeOf(weather);
       weatherProto.weatherUrl = undefined;
       await expect(weatherProto.getWeatherFromApi()).rejects.toThrow('URL not yet set for openweathermap');
+    });
+
+    it('should fail when no url at forecast level', async () => {
+      // try {
+      const weather = new SnowForecastService(mockLogger, mockHttpClient,
+        {apiKey: 'xxx', apiVersion: '3.0', location: '0,0', units: 'standard', apiThrottleMinutes: 10});
+      await weather.setup();
+      const weatherProto = Object.getPrototypeOf(weather);
+      weatherProto.weatherUrl = undefined;
+      clearCache(weatherProto, 'getSnowForecast');
+      await expect(weatherProto.getSnowForecast()).rejects.toThrow('URL not yet set for openweathermap');
     });
 
     it('should work when there is a url', async () => {

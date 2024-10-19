@@ -2,6 +2,7 @@ import { Logger } from 'homebridge';
 import { SnowSenseUnits } from './SnowSenseConfig';
 import { HttpClient } from './HttpClient';
 import axios from 'axios';
+import { cacheable } from './cacheDecorator';
 
 /**
  * A single snapshot of data needed to determine if it might be snowing
@@ -62,13 +63,9 @@ export default class SnowForecastService {
   public readonly location: string;
   protected weatherUrl?: string;
   public readonly units: string;
-  protected weatherCache?: SnowForecast;
-  protected latestWeatherTime?: Date;
   protected logger: Logger;
-  protected fetchLock: boolean;
   protected readonly apiThrottleMillis: number;
   public latLon?: { lat: number; lon: number };
-  protected lockTimeoutMillis = 2000;
 
   constructor(
     log: Logger,
@@ -83,7 +80,6 @@ export default class SnowForecastService {
     }: SnowForecastOptions,
   ) {
     this.logger = log;
-    this.fetchLock = false;
 
     this.apiKey = apiKey;
     this.apiVersion = apiVersion;
@@ -228,42 +224,16 @@ export default class SnowForecastService {
    *
    * @returns SnowForecast
    */
+  @cacheable(15) // Cache for 15 minutes
   public async getSnowForecast(): Promise<SnowForecast> {
-    // if another instance is already fetching, wait for it to finish
-    const endTime: number = new Date().getTime() + this.lockTimeoutMillis;
-    while (new Date().getTime() < endTime && this.fetchLock) {
-      await new Promise(r => setTimeout(r, 10));
+    if (!this.weatherUrl) {
+      throw new Error('URL not yet set for openweathermap');
     }
-    // if we are still locked, throw an error
-    if (this.fetchLock) {
-      throw new Error('Weather fetch is locked');
-    }
-    try {
-      this.fetchLock = true;
-      const now = new Date();
-      if (this.weatherCache &&
-        this.latestWeatherTime &&
-        (now.getTime() - this.latestWeatherTime.getTime()) < this.apiThrottleMillis) {
-        this.debug('Using cached weather');
-      } else {
-        this.debug('Fetching new weather');
-        const forecast: OpenWeatherResponse = await this.getWeatherFromApi();
-
-        // console.log('current weather', forecast.current.weather);
-        // console.log('hour1 weather', forecast.hourly[0].weather);
-        // console.log('forecast', forecast);
-
-        this.weatherCache = this.adjustForOpenWeatherMap(forecast);
-        // make one-liner output for debugging
-        const hours = this.weatherCache.hourly.slice(0, 7).map(h => h.hasSnow).join(',');
-        this.debug(`Now and next 6 hours: ${hours}`);
-
-        this.latestWeatherTime = now;
-      }
-      return this.weatherCache;
-    } finally {
-      this.fetchLock = false;
-    }
+    const forecast: OpenWeatherResponse = await this.getWeatherFromApi();
+    const result = this.adjustForOpenWeatherMap(forecast);
+    const hours = result.hourly.slice(0, 7).map(h => h.hasSnow).join(',');
+    this.debug(`Now and next 6 hours: ${hours}`);
+    return result;
   }
 
   /**
