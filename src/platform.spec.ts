@@ -1,201 +1,434 @@
-import { SnowSenseConfig, SnowSenseUnits } from './SnowSenseConfig';
-import { SnowSensePlatform } from './platform';
-import { API, Logger, PlatformConfig } from 'homebridge';
-import { SnowWatch } from './SnowWatch';
-import tmp from 'tmp';
-import { writeFileSync } from 'fs';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock('./SnowWatch', () => {
-  const mock = {
-    updatePredictionStatus: jest.fn(),
-    // mock other instance methods as needed
-  };
+import {SnowSensePlatform} from './platform';
+import {API, Logger, PlatformAccessory, PlatformConfig} from 'homebridge';
+import {BinaryLike} from 'crypto';
+import {IsSnowyAccessory} from './platformAccessory';
+import {SnowWatch} from './SnowWatch';
+import {SnowSenseConfig} from './SnowSenseConfig';
+import {PlatformName, PluginIdentifier} from 'homebridge/lib/api';
 
+jest.mock('./SnowWatch');
+jest.mock('./platformAccessory', () => {
   return {
-    __esModule: true, // this property makes it work
-    default: jest.fn(),  // this mocks the default export
-    SnowWatch: jest.fn().mockImplementation(() => mock),
+    IsSnowyAccessory: jest.fn().mockImplementation((platform, accessory) => {
+      return {
+        platform: platform,
+        accessory: accessory,
+        updateValueIfChanged: jest.fn(),
+        setCharacteristic: jest.fn(),
+      };
+    }),
   };
-});
-
-SnowWatch.init = jest.fn();  // this mocks the static method
-SnowWatch.getInstance = jest.fn().mockReturnValue({
-  updatePredictionStatus: jest.fn(),
-  // return other mocked instance methods as needed
 });
 
 describe('SnowSensePlatform', () => {
-  let log: Logger;
-  let platformConfig: PlatformConfig;
-  let api: API;
-  let config: SnowSenseConfig;
-  let configFile: tmp.FileResult;
-  let storageDir: tmp.DirResult;
+  let platform: SnowSensePlatform;
+  let mockLog: jest.Mocked<Logger>;
+  let mockApi: jest.Mocked<API>;
+  let mockConfig: PlatformConfig;
 
   beforeEach(() => {
-    storageDir = tmp.dirSync();
-    configFile = tmp.fileSync();
-    const storagePathMock = jest.fn().mockReturnValue(storageDir.name);
-    const configPathMock = jest.fn().mockReturnValue(configFile.name);
+    mockLog = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    } as unknown as jest.Mocked<Logger>;
 
-    const debug = true;
-    const consoleInfo = jest.fn((...args) =>
-      debug ? console.info(...args) : undefined,
-    );
-    const consoleWarn = jest.fn((...args) =>
-      debug ? console.warn(...args) : undefined,
-    );
-    const consoleError = jest.fn((...args) =>
-      debug ? console.error(...args) : undefined,
-    );
-    const consoleDebug = jest.fn((...args) =>
-      debug ? console.debug(...args) : undefined,
-    );
-    log = {
-      info: consoleInfo,
-      warn: consoleWarn,
-      error: consoleError,
-      debug: consoleDebug,
-      log: jest.fn(),
-    };
-
-    // log = {
-    //   error: jest.fn(),
-    //   warn: jest.fn(),
-    //   info: jest.fn(),
-    //   debug: jest.fn(),
-    //   log: jest.fn(),
-    // };
-    platformConfig = {
-      debugOn: true,
-      platform: 'SnowSense',
-      name: 'test',
-    } as PlatformConfig;
-    api = {
+    mockApi = {
+      on: jest.fn(),
+      registerPlatformAccessories: jest.fn((pluginIdentifier: PluginIdentifier,
+        platformName: PlatformName,
+        accessories: PlatformAccessory[]) => {
+        accessories.forEach(accessory => {
+          platform.configureAccessory(accessory);
+        });
+      }),
+      unregisterPlatformAccessories: jest.fn(),
+      updatePlatformAccessories: jest.fn(),
       hap: {
         Service: jest.fn(),
+        Characteristic: jest.fn(),
+        uuid: {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          generate: jest.fn((_unusedData: BinaryLike) => 'test-uuid') as jest.Mock<string, [BinaryLike]>,
+        },
       },
       user: {
-        configPath: configPathMock,
-        storagePath: storagePathMock,
+        configPath: jest.fn().mockReturnValue('/mock/config/path'),
+        storagePath: jest.fn().mockReturnValue('/mock/storage/path'),
       },
-      on: jest.fn(),
-    } as unknown as API;
-    config = {
-      apiKey: 'test',
-      apiVersion: 'test',
-      debugOn: true,
-      location: 'test',
-      units: 'imperial',
-      apiThrottleMinutes: 15,
-      name: 'test',
-      platforms: [],
-    } as unknown as SnowSenseConfig;
+      platformAccessory: jest.fn().mockImplementation((displayName, uuid) => {
+        return {
+          displayName,
+          UUID: uuid,
+          context: {
+            device: {
+              displayName: displayName,
+            },
+          },
+          services: [],
+          getService: jest.fn(),
+          addService: jest.fn(),
+        } as unknown as PlatformAccessory;
+      }),
+    } as unknown as jest.Mocked<API>;
 
-    writeFileSync(configFile.name, JSON.stringify(config, null, 4), 'utf8');
+    mockConfig = {
+      name: 'Test Platform',
+      platform: 'SnowSense',
+    };
+
+    platform = new SnowSensePlatform(mockLog, mockConfig, mockApi);
   });
 
   afterEach(() => {
-    storageDir.removeCallback();
-    configFile.removeCallback();
-    jest.restoreAllMocks();
+    jest.clearAllMocks();
   });
 
-  describe('Constructor', () => {
-    it('should set default values for configuration', () => {
-      const platform = new SnowSensePlatform(log, platformConfig, api);
+  it('should initialize correctly in constructor', () => {
+    expect(platform.log).toBe(mockLog);
+    expect(platform.platformConfig).toBe(mockConfig);
+    expect(platform.api).toBe(mockApi);
+    expect(platform.accessories).toEqual([]);
+    expect(mockApi.on).toHaveBeenCalledWith('didFinishLaunching', expect.any(Function));
+  });
 
-      expect(platform.log).toBe(log);
-      expect(platform.platformConfig).toBe(platformConfig);
-      expect(platform.api).toBe(api);
-      expect(platform.debugOn).toBe(config.debugOn);
-
-      expect(platform.accessories).toEqual([]);
-      expect(platform.snowyAccessories).toEqual([]);
-      expect(platform.forecastFrequencyMillis).toBe(
-        1000 * 60 * (config.apiThrottleMinutes || 15),
-      );
+  describe('debug function', () => {
+    it('should not log when debugOn is false', () => {
+      platform['debug']('Test debug message');
+      expect(mockLog.debug).not.toHaveBeenCalled();
     });
 
-    it('should set units to imperial if not specified', () => {
-      const platform = new SnowSensePlatform(log, platformConfig, api);
+    it('should log when debugOn is true', () => {
+      // Create a new platform instance with debugOn set to true
+      const debugConfig = {...mockConfig, debugOn: true};
+      const debugPlatform = new SnowSensePlatform(mockLog, debugConfig, mockApi);
 
-      expect((platform.platformConfig as PlatformConfig).units).toEqual('imperial');
+      debugPlatform['debug']('Test debug message');
+      expect(mockLog.debug).toHaveBeenCalledWith('Test debug message');
     });
 
-    it('should not change units if already specified', () => {
-      platformConfig.units = 'metric';
-      const platform = new SnowSensePlatform(log, platformConfig, api);
+    it('should log with parameters when debugOn is true', () => {
+      const debugConfig = {...mockConfig, debugOn: true};
+      const debugPlatform = new SnowSensePlatform(mockLog, debugConfig, mockApi);
 
-      expect((platform.platformConfig as PlatformConfig).units).toEqual('metric');
-    });
-
-    it('should correctly handle DID_FINISH_LAUNCHING event', () => {
-      const platform = new SnowSensePlatform(log, platformConfig, api);
-      const discoverDevicesSpy = jest.spyOn(platform, 'discoverDevices');
-      const startWatchingWeatherSpy = jest.spyOn(
-        platform,
-        'startWatchingWeather',
-      );
-
-      // Simulate the DID_FINISH_LAUNCHING event
-      const callback = (api.on as jest.Mock).mock.calls[0][1];
-      callback();
-
-      expect(discoverDevicesSpy).toHaveBeenCalledWith(platformConfig);
-      expect(startWatchingWeatherSpy).toHaveBeenCalledWith(platformConfig);
+      debugPlatform['debug']('Test message with %s', 'parameter');
+      expect(mockLog.debug).toHaveBeenCalledWith('Test message with %s', 'parameter');
     });
   });
 
-  describe('UpdateAccessories', () => {
-    let platform: SnowSensePlatform;
-    let snowWatch: SnowWatch;
+  it('should add accessory to accessories array', () => {
+    const mockAccessory = {} as PlatformAccessory;
+    platform.configureAccessory(mockAccessory);
+    expect(platform.accessories).toContain(mockAccessory);
+  });
 
-    beforeEach(() => {
-      platform = new SnowSensePlatform(log, platformConfig, api);
-      snowWatch = SnowWatch.getInstance();
+  describe('discoverDevices', () => {
+    it('should create and register new accessories', () => {
+      const mockDevice = {displayName: 'Test Device'};
+      platform.platformConfig.sensors = [mockDevice];
+
+      const mockUuid = 'test-uuid';
+      (mockApi.hap.uuid.generate as jest.Mock).mockReturnValue(mockUuid);
+
+      platform.discoverDevices(platform.platformConfig as SnowSenseConfig);
+
+      expect(mockApi.platformAccessory).toHaveBeenCalledWith('Test Device', mockUuid);
+      expect(mockApi.registerPlatformAccessories).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [expect.any(Object)],
+      );
+      expect(IsSnowyAccessory).toHaveBeenCalledWith(platform, expect.any(Object));
     });
 
-    it('should initialize SnowWatch and start watching weather', async () => {
-      const config: SnowSenseConfig = {
-        apiKey: 'testApiKey',
-        apiVersion: 'testApiVersion',
-        apiThrottleMinutes: 15,
-        debugOn: true,
-        units: 'imperial' as SnowSenseUnits,
-        location: 'testLocation',
-        coldPrecipitationThreshold: 0,
-        onlyWhenCold: false,
-        coldTemperatureThreshold: 0,
+    it('should correctly identify accessories to remove', () => {
+      const mockAccessory1 = {displayName: 'Device1', UUID: 'uuid1'} as unknown as PlatformAccessory;
+      const mockAccessory2 = {displayName: 'Device2', UUID: 'uuid2'} as unknown as PlatformAccessory;
+      const mockAccessory3 = {displayName: 'Device3', UUID: 'uuid3'} as unknown as PlatformAccessory;
+
+      platform.accessories = [mockAccessory1, mockAccessory2, mockAccessory3];
+
+      (platform.platformConfig as any) = {
+        ...platform.platformConfig,
         sensors: [
-          {
-            displayName: 'testSensor',
-            hoursBeforeSnowIsSnowy: 1,
-            hoursAfterSnowIsSnowy: 1,
-            consecutiveHoursFutureIsSnowy: 1,
-          },
+          {displayName: 'Device1'},
+          {displayName: 'Device3'},
+          {displayName: 'NewDevice'},
         ],
-        platform: 'SnowSense',
-        name: 'testName',
       };
 
-      await platform.startWatchingWeather(config);
+      const unregisterSpy = jest.spyOn(platform.api, 'unregisterPlatformAccessories');
 
-      expect(SnowWatch.init).toHaveBeenCalledWith(platform.log, {
-        apiKey: config.apiKey,
-        apiVersion: config.apiVersion,
-        debugOn: config.debugOn,
-        location: config.location,
-        units: config.units,
-        apiThrottleMinutes: config.apiThrottleMinutes,
-        coldPrecipitationThreshold: config.coldPrecipitationThreshold,
-        onlyWhenCold: config.onlyWhenCold,
-        coldTemperatureThreshold: config.coldTemperatureThreshold,
-        storagePath: platform.api.user.storagePath(),
-      });
+      platform.discoverDevices(platform.platformConfig as SnowSenseConfig);
 
-      jest.advanceTimersByTime(platform.forecastFrequencyMillis);
-      expect(snowWatch.updatePredictionStatus).toHaveBeenCalled();
+      expect(unregisterSpy).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [mockAccessory2],
+      );
+
+      expect(platform.accessories).not.toContain(mockAccessory2);
+      expect(platform.accessories).toContain(mockAccessory1);
+      expect(platform.accessories).toContain(mockAccessory3);
+    });
+
+    it('should correctly identify accessories to remove when sensors are null set', () => {
+      const mockAccessory1 = {displayName: 'Device1', UUID: 'uuid1'} as unknown as PlatformAccessory;
+      const mockAccessory2 = {displayName: 'Device2', UUID: 'uuid2'} as unknown as PlatformAccessory;
+      const mockAccessory3 = {displayName: 'Device3', UUID: 'uuid3'} as unknown as PlatformAccessory;
+
+      platform.accessories = [mockAccessory1, mockAccessory2, mockAccessory3];
+
+      (platform.platformConfig as any) = {
+        ...platform.platformConfig,
+        sensors: undefined,
+      };
+
+      const unregisterSpy = jest.spyOn(platform.api, 'unregisterPlatformAccessories');
+
+      platform.discoverDevices(platform.platformConfig as SnowSenseConfig);
+
+      expect(unregisterSpy).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [mockAccessory2],
+      );
+
+      expect(platform.accessories).not.toContain(mockAccessory1);
+      expect(platform.accessories).not.toContain(mockAccessory2);
+      expect(platform.accessories).not.toContain(mockAccessory3);
+    });
+
+    it('should generate a random name for devices with undefined displayName', () => {
+      // Mock Math.random to return a predictable value
+      const mockMathRandom = jest.spyOn(Math, 'random').mockReturnValue(0.123456789);
+
+      // Setup a device with undefined displayName
+      const snowyDevices = [
+        {displayName: undefined},
+        {displayName: 'Device1'},
+      ];
+
+      // Mock the config
+      (platform.platformConfig as any) = {
+        ...platform.platformConfig,
+        sensors: snowyDevices,
+      };
+
+      // Mock UUID generation to return predictable values
+      let uuidCounter = 0;
+      (platform.api.hap.uuid.generate as jest.Mock).mockImplementation(() => `mock-uuid-${uuidCounter++}`);
+
+      // Spy on the registerPlatformAccessories method
+      const registerSpy = jest.spyOn(platform.api, 'registerPlatformAccessories');
+
+      // Call the method
+      platform.discoverDevices(platform.platformConfig as SnowSenseConfig);
+
+      // Assertions
+      expect(registerSpy).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [
+          expect.objectContaining({
+            displayName: 'Snowy-xjylrx',
+            UUID: 'mock-uuid-0',
+          }),
+        ],
+      );
+      expect(registerSpy).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [
+          expect.objectContaining({
+            displayName: 'Device1',
+            UUID: 'mock-uuid-1',
+          }),
+        ],
+      );
+
+      // Restore the original Math.random
+      mockMathRandom.mockRestore();
+    });
+
+    it('should handle existing accessories correctly', () => {
+      // Setup existing accessories
+      const existingAccessory1 = {
+        displayName: 'ExistingDevice1',
+        UUID: 'SNOWSENSE-ExistingDevice1',
+        context: {device: {displayName: 'ExistingDevice1'}},
+      } as unknown as PlatformAccessory;
+      const existingAccessory2 = {
+        displayName: 'ExistingDevice2',
+        UUID: 'SNOWSENSE-ExistingDevice2',
+        context: {device: {displayName: 'ExistingDevice2'}},
+      } as unknown as PlatformAccessory;
+
+      platform.accessories = [existingAccessory1, existingAccessory2];
+
+      // Setup devices in config (mix of existing and new)
+      const snowyDevices = [
+        {displayName: 'ExistingDevice1'},  // Existing device
+        {displayName: 'NewDevice'},        // New device
+        {displayName: 'ExistingDevice2'},  // Existing device
+      ];
+
+      (platform.platformConfig as any) = {
+        ...platform.platformConfig,
+        sensors: snowyDevices,
+      };
+
+      // Mock UUID generation. Pass the seed instead of making a real uuid. The seed is ("SNOWSENSE-" + displayName)
+      // above, you can see the test data has UUIDs that match this pattern
+      (platform.api.hap.uuid.generate as jest.Mock).mockImplementation((seed) => seed);
+
+      // Spies
+      const registerSpy = jest.spyOn(mockApi, 'registerPlatformAccessories');
+      const updateSpy = jest.spyOn(mockApi, 'updatePlatformAccessories');
+      const unregisterSpy = jest.spyOn(mockApi, 'unregisterPlatformAccessories');
+
+      // Call the method
+      platform.discoverDevices(platform.platformConfig as SnowSenseConfig);
+
+      // Assertions
+
+      // Check that existing accessories were updated
+      expect(updateSpy).toHaveBeenCalledWith([existingAccessory1]);
+      expect(updateSpy).toHaveBeenCalledWith([existingAccessory2]);
+      expect(updateSpy).toHaveBeenCalledTimes(2);
+
+      // Check that new accessory was registered
+      expect(registerSpy).toHaveBeenCalledWith(
+        'homebridge-snowsense',
+        'SnowSense',
+        [expect.objectContaining({displayName: 'NewDevice', UUID: 'SNOWSENSE-NewDevice'})],
+      );
+
+      // Check that no accessories were unregistered
+      expect(unregisterSpy).not.toHaveBeenCalled();
+
+      // check that we registered the NewDevice
+      expect(registerSpy).toHaveBeenCalledTimes(1);
+
+      // Check that platform.accessories now contains all devices
+      expect(platform.accessories).toHaveLength(3);
+      expect(platform.accessories.map(a => a.displayName)).toEqual(
+        expect.arrayContaining(['ExistingDevice1', 'ExistingDevice2', 'NewDevice']),
+      );
+
+      // Check that existing accessories maintained their UUIDs
+      expect(platform.accessories.find(a => a.displayName === 'ExistingDevice1')?.UUID).toBe('SNOWSENSE-ExistingDevice1');
+      expect(platform.accessories.find(a => a.displayName === 'ExistingDevice2')?.UUID).toBe('SNOWSENSE-ExistingDevice2');
     });
   });
-});
+
+  describe('updateAccessories', () => {
+    it('should update all accessories', async () => {
+      const mockAccessory1 = {
+        displayName: 'Device 1',
+        UUID: 'uuid1',
+        context: {
+          device: {
+            displayName: 'Device 1',
+          },
+        },
+        getService: jest.fn().mockReturnValue({
+          updateCharacteristic: jest.fn(),
+        }),
+      } as unknown as PlatformAccessory;
+
+      const mockAccessory2 = {
+        displayName: 'Device 2',
+        UUID: 'uuid2',
+        context: {
+          device: {
+            displayName: 'Device 2',
+          },
+        },
+        getService: jest.fn().mockReturnValue({
+          updateCharacteristic: jest.fn(),
+        }),
+      } as unknown as PlatformAccessory;
+
+      platform.snowyAccessories = [
+        new IsSnowyAccessory(platform, mockAccessory1),
+        new IsSnowyAccessory(platform, mockAccessory2),
+      ];
+
+      const mockWatcher = {
+        updatePredictionStatus: jest.fn(),
+        snowSensorValue: jest.fn().mockReturnValue(true),
+      };
+      (SnowWatch as jest.Mock).mockReturnValue(mockWatcher);
+
+      await platform.updateAccessories();
+
+      expect(mockWatcher.updatePredictionStatus).toHaveBeenCalled();
+      expect(mockWatcher.snowSensorValue).toHaveBeenCalledTimes(2);
+      expect(platform.snowyAccessories[0].updateValueIfChanged).toHaveBeenCalled();
+      expect(platform.snowyAccessories[1].updateValueIfChanged).toHaveBeenCalled();
+    });
+
+    it('should log an error when updatePredictionStatus throws', async () => {
+      // Mock the getWatcher method
+      const mockWatcher = {
+        updatePredictionStatus: jest.fn().mockRejectedValue(new Error('Weather update failed')),
+        snowSensorValue: jest.fn().mockReturnValue(true),
+      };
+      jest.spyOn(platform, 'getWatcher').mockResolvedValue(mockWatcher as any);
+
+      // Mock the log.error method
+      const logErrorSpy = jest.spyOn(platform.log, 'error');
+
+      // Call the method
+      await platform.updateAccessories();
+
+      // Check if the error was logged
+      expect(logErrorSpy).toHaveBeenCalledWith('Error getting updated weather: Weather update failed');
+
+      // Check that snowSensorValue was not called due to early return
+      expect(mockWatcher.snowSensorValue).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('watchWeather', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    it('should set up interval for updating accessories', async () => {
+      const updateAccessoriesSpy = jest.spyOn(platform, 'updateAccessories').mockResolvedValue();
+
+      await platform.watchWeather();
+
+      expect(updateAccessoriesSpy).toHaveBeenCalledTimes(1);
+
+      jest.advanceTimersByTime(platform.forecastFrequencyMillis);
+
+      expect(updateAccessoriesSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('simulate DID_FINISH_LAUNCHING', () => {
+    it('should call discoverDevices and startWatchingWeather when DID_FINISH_LAUNCHING is triggered', () => {
+      // Spy on the methods we expect to be called
+      const discoverDevicesSpy = jest.spyOn(platform, 'discoverDevices').mockImplementation();
+      const startWatchingWeatherSpy = jest.spyOn(platform, 'startWatchingWeather').mockResolvedValue();
+
+      // Get the callback function that was passed to api.on
+      const didFinishLaunchingCallback = (mockApi.on as jest.Mock).mock.calls.find(
+        call => call[0] === 'didFinishLaunching',
+      )[1];
+
+      // Call the callback function
+      didFinishLaunchingCallback();
+
+      // Verify that the methods were called
+      expect(discoverDevicesSpy).toHaveBeenCalledWith(platform.platformConfig);
+      expect(startWatchingWeatherSpy).toHaveBeenCalledWith(platform.platformConfig);
+    });
+  });
+})
+;
