@@ -1,6 +1,8 @@
-import axios from 'axios';
-import {Logger} from 'homebridge';
+import { Logger } from 'homebridge';
 import { SnowSenseUnits } from './SnowSenseConfig';
+import { HttpClient } from './HttpClient';
+import axios from 'axios';
+import { cacheable } from './cacheDecorator';
 
 /**
  * A single snapshot of data needed to determine if it might be snowing
@@ -25,11 +27,11 @@ export type SnowForecastOptions = {
   /**
    * Get an api key from https://openweathermap.org/api
    */
-  apiKey: string;
+  apiKey?: string;
   /**
    * Latest version is 3.0, but allow using 2.5 for backwards compatibility
    */
-  apiVersion: string;
+  apiVersion?: string;
   /**
    * Show debug logging
    */
@@ -55,98 +57,111 @@ export type SnowForecastOptions = {
 };
 
 export default class SnowForecastService {
-  private readonly apiKey: string = '';
-  private readonly apiVersion: string = '2.5';
-  private readonly debugOn: boolean;
-  public readonly location: string = '';
-  private weatherUrl?: string;
-  public readonly units: string = '';
-  private weatherCache?: SnowForecast;
-  private latestWeatherTime?: Date;
-  private logger: Logger;
-  private fetchLock: boolean;
-  private readonly apiThrottleMillis;
+  protected readonly apiKey: string;
+  protected readonly apiVersion: string;
+  protected readonly debugOn: boolean;
+  public readonly location: string;
+  protected weatherUrl?: string;
+  public readonly units: string;
+  protected logger: Logger;
+  protected readonly apiThrottleMillis: number;
   public latLon?: { lat: number; lon: number };
-  private lockTimeoutMillis = 2000;
 
-  constructor(log: Logger, options: SnowForecastOptions) {
+  constructor(
+    log: Logger,
+    private readonly httpClient: HttpClient,
+    {
+      apiKey = '',
+      apiVersion = '3.0',
+      debugOn = false,
+      location = 'New York,NY,US',
+      units = 'imperial',
+      apiThrottleMinutes = 15,
+    }: SnowForecastOptions,
+  ) {
     this.logger = log;
-    this.fetchLock = false;
 
-    this.apiKey = options.apiKey;
-    this.apiVersion = options.apiVersion;
-    this.debugOn = !!options.debugOn;
-    this.location = options.location || 'New York,NY,US';
-    this.units = options.units || 'imperial';
+    this.apiKey = apiKey;
+    this.apiVersion = apiVersion;
+    this.debugOn = debugOn;
+    this.location = location;
+    this.units = units;
 
     // no more frequently than every 5 minutes, default to 15 minutes
-    const throttleMinutes = options.apiThrottleMinutes || 15;
-    this.apiThrottleMillis = Math.max(throttleMinutes, 5) * 60 * 1000;
+    this.apiThrottleMillis = Math.max(apiThrottleMinutes, 5) * 60 * 1000;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private debug(message: string, ...parameters: any[]): void {
+  private debug(message: string, ...parameters: unknown[]): void {
     if (this.debugOn) {
       this.logger.debug(message, ...parameters);
     }
   }
 
   /**
-   * Set up the instance of this class, includes an async conversion of the locationn
+   * Set up the instance of this class, includes an async conversion of the location
    */
   public async setup() {
     this.latLon = await this.convertLocationToLatLong(this.location);
+
+    const apiKey = this.apiKey;
     this.weatherUrl = `https://api.openweathermap.org/data/${this.apiVersion}/onecall?lat=${
-      this.latLon.lat}&lon=${this.latLon.lon}&appid=${this.apiKey}&units=${
+      this.latLon.lat}&lon=${this.latLon.lon}&appid=${apiKey}&units=${
       this.units}&exclude=minutely,alerts,daily`;
   }
 
   /**
    * Convert a location description to a latitude-longitude pair
-   * @param location a city, zip code or latitude-longitude pair as a strinng
+   * @param location a city, zip code or latitude-longitude pair as a string
    * @private
    */
   private async convertLocationToLatLong(location: string): Promise<{ lat: number; lon: number }> {
 
     // If the location is a latitude-longitude pair, return it as-is
     if (this.isLatLong(location)) {
-      const latlon: number[] = location.split(',').map(str => parseFloat(str));
-      return {lat: latlon[0], lon: latlon[1]};
+      return this.parseLatLong(location);
     }
 
     if (this.isZipCode(location)) {
       // If the location is a zip code, use the OpenWeatherMap API to convert it
-      const fullLocation = await this.getLocationFromZip(location);
-      return {lat: fullLocation.lat, lon: fullLocation.lon};
+      return this.getLocationFromZip(location);
     }
 
     // Otherwise, assume the location is a city name
-    const fullLocation = await this.getLocationFromCity(location);
-    return {lat: fullLocation.lat, lon: fullLocation.lon};
+    return this.getLocationFromCity(location);
+  }
+
+  private parseLatLong(location: string): { lat: number; lon: number } {
+    const [lat, lon] = location.split(',').map(str => parseFloat(str.trim()));
+    return {lat, lon};
   }
 
   /**
    * Return a latitude-longitude pair for the given zip code\
    * https://api.openweathermap.org/geo/1.0/direct?q=springfield,oh,us&limit=1&appid=<API-ID>
    *
-   * @param zip a five digit zip code
+   * @param zip a five-digit zip code
    * @private
    */
   private async getLocationFromZip(zip: string): Promise<{ lat: number; lon: number }> {
     // If the location is a zip code, use the OpenWeatherMap API to convert it
     this.debug(`Converting zip code ${zip} to latitude-longitude pair`);
-
-    // TODO: do something here?
-
-
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(
       zip)}&limit=1&appid=${this.apiKey}`;
-    const response = await axios.get(geocodingApiUrl);
-    if (!response || !response.data || response.data.cod) {
-      throw new Error(`No location found for zip code (${zip})`);
+    try {
+      const response = await this.httpClient.get<ZipCodeResponse>(geocodingApiUrl);
+      this.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
+      return {lat: response.data.lat, lon: response.data.lon};
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error(`No location found for zip code '${zip}'`);
+        }
+        throw new Error(`Error ${error.response?.status} getting location from zip code '${zip}': ${error.message}`);
+      }
+      // This is not an Axios error
+      throw new Error(`Unexpected error getting location from zip code '${zip}': ${error}`);
     }
-    this.debug(`converting zip=[${zip}] TO lat=[${response.data.lat}] lon=[${response.data.lon}]`);
-    return response.data;
+
   }
 
   /**
@@ -161,19 +176,11 @@ export default class SnowForecastService {
     this.debug(`converting city=[${city}]`);
     const geocodingApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       city)}&limit=1&appid=${this.apiKey}`;
-    return axios.get(geocodingApiUrl).then((response) => {
-      if (!response) {
-        throw new Error(`No location found for city (${city})`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } else if ((response as any).cod === 401) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        throw new Error((response as any).message);
-      } else if (response.data.length === 0) {
-        throw new Error(`No location found for city (${city}) *** Did you include a country code? eg "New York, NY, US" ***`);
-      }
-      this.debug(`converting city=[${city}] TO lat=[${response.data[0].lat}] lon=[${response.data[0].lon}]`);
-      return response.data[0];
-    });
+    const response = await this.httpClient.get<GeocodingResponse[]>(geocodingApiUrl);
+    if (!response.data || response.data.length === 0) {
+      throw new Error(`No location found for city (${city}) *** Did you include a country code? eg "New York, NY, US" ***`);
+    }
+    return {lat: response.data[0].lat, lon: response.data[0].lon};
   }
 
   /**
@@ -187,13 +194,7 @@ export default class SnowForecastService {
     const zipCodeRegex = /^\d{5}$/;
 
     // Check if the string matches the regular expressions
-    if (zipCodeRegex.test(location)) {
-      return true;
-    }
-
-    // If the string does not match either of the regular expressions,
-    // consider it invalid
-    return false;
+    return zipCodeRegex.test(location);
   }
 
   /**
@@ -223,38 +224,16 @@ export default class SnowForecastService {
    *
    * @returns SnowForecast
    */
+  @cacheable(15) // Cache for 15 minutes
   public async getSnowForecast(): Promise<SnowForecast> {
-    // if another instance is already fetching, wait for it to finish
-    const endTime: number = new Date().getTime() + this.lockTimeoutMillis;
-    while (new Date().getTime() < endTime && this.fetchLock) {
-      await new Promise(r => setTimeout(r, 10));
+    if (!this.weatherUrl) {
+      throw new Error('URL not yet set for openweathermap');
     }
-    // if we are still locked, throw an error
-    if (this.fetchLock) {
-      throw new Error('Weather fetch is locked');
-    }
-    try {
-      this.fetchLock = true;
-      const now = new Date();
-      if (this.weatherCache &&
-        this.latestWeatherTime &&
-        (now.getTime() - this.latestWeatherTime.getTime()) < this.apiThrottleMillis) {
-        this.debug('Using cached weather');
-      } else {
-        this.debug('Fetching new weather');
-        const forecast = await this.getWeatherFromApi();
-        this.weatherCache = this.adjustForOpenWeatherMap(forecast);
-
-        // make one-liner output for debugging
-        const hours = this.weatherCache.hourly.slice(0, 7).map(h => h.hasSnow).join(',');
-        this.debug(`Now and next 6 hours: ${hours}`);
-
-        this.latestWeatherTime = now;
-      }
-      return this.weatherCache;
-    } finally {
-      this.fetchLock = false;
-    }
+    const forecast: OpenWeatherResponse = await this.getWeatherFromApi();
+    const result = this.adjustForOpenWeatherMap(forecast);
+    const hours = result.hourly.slice(0, 7).map(h => h.hasSnow).join(',');
+    this.debug(`Now and next 6 hours: ${hours}`);
+    return result;
   }
 
   /**
@@ -265,17 +244,25 @@ export default class SnowForecastService {
    * @throws Error if there is no url yet or call fails
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async getWeatherFromApi(): Promise<any> {
+  private async getWeatherFromApi(): Promise<OpenWeatherResponse> {
     if (!this.weatherUrl) {
       throw new Error('URL not yet set for openweathermap');
     }
     try {
-      const response = await axios.get(this.weatherUrl);
+      const response = await this.httpClient.get<OpenWeatherResponse>(this.weatherUrl);
       return response.data;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      throw new Error(`Error getting weather from OpenWeatherMap: ${error.response.data.message}`);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.status === 401) {
+          throw new Error('Invalid OpenWeatherMap API key');
+        }
+        if (error.status === 429) {
+          throw new Error('OpenWeatherMap API rate limit exceeded');
+        }
+        throw new Error(`Error getting weather from OpenWeatherMap: ${error.message}`);
+      }
+      // This is not an Axios error
+      throw new Error(`Unexpected error getting weather from OpenWeatherMap: ${error}`);
     }
   }
 
@@ -286,12 +273,10 @@ export default class SnowForecastService {
    * @returns SnowForecast for current and each hour in the weather forecast
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private adjustForOpenWeatherMap(data: any): SnowForecast {
+  private adjustForOpenWeatherMap(data: OpenWeatherResponse): SnowForecast {
     return {
       current: this.adjustWeatherForOpenWeatherMap(data.current),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      hourly: data.hourly.map((forecast: any) => this.adjustWeatherForOpenWeatherMap(forecast)),
+      hourly: data.hourly.map((forecast: HourlyForecast) => this.adjustWeatherForOpenWeatherMap(forecast)),
     };
   }
 
@@ -304,9 +289,8 @@ export default class SnowForecastService {
    * @returns a SnowReport for the given hour
    * @private
    */
-  private adjustWeatherForOpenWeatherMap(forecast): SnowReport {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const id = forecast.weather.find((w: any) => w.id).id;
+  private adjustWeatherForOpenWeatherMap(forecast: CurrentWeather | HourlyForecast): SnowReport {
+    const id = forecast.weather[0].id;
     const hasSnow = id >= 600 && id < 700;
     const hasPrecipitation = id >= 200 && id < 700;
 
