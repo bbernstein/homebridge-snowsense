@@ -1,0 +1,170 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+        default: 'patch'
+      prerelease_tag:
+        description: 'Pre-release tag (only used when release_type is NOT prerelease, or to change existing prerelease tag)'
+        required: false
+        type: choice
+        options:
+          - none
+          - alpha
+          - beta
+          - rc
+        default: 'none'
+      dry_run:
+        description: 'Dry run (skip npm publish)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write      # Required to push commits and tags
+  id-token: write      # Required for npm OIDC trusted publishing
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Only run on main branch
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Determine version command
+        id: version_cmd
+        run: |
+          RELEASE_TYPE="${{ inputs.release_type }}"
+          PRERELEASE_TAG="${{ inputs.prerelease_tag }}"
+
+          if [ "$RELEASE_TYPE" = "prerelease" ]; then
+            # Incrementing existing prerelease (e.g., 1.0.0-beta.0 -> 1.0.0-beta.1)
+            if [ "$PRERELEASE_TAG" != "none" ]; then
+              # Change prerelease tag (e.g., 1.0.0-alpha.0 -> 1.0.0-beta.0)
+              VERSION_CMD="version prerelease --preid=$PRERELEASE_TAG"
+            else
+              # Just increment prerelease number
+              VERSION_CMD="version prerelease"
+            fi
+          elif [ "$PRERELEASE_TAG" != "none" ]; then
+            # New prerelease of a release type (e.g., 1.0.0 -> 1.0.1-beta.0)
+            VERSION_CMD="version pre$RELEASE_TYPE --preid=$PRERELEASE_TAG"
+          else
+            # Standard release (e.g., 1.0.0 -> 1.0.1)
+            VERSION_CMD="version $RELEASE_TYPE"
+          fi
+
+          echo "cmd=$VERSION_CMD" >> $GITHUB_OUTPUT
+          echo "Version command: npm $VERSION_CMD"
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          npm ${{ steps.version_cmd.outputs.cmd }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Commit version bump
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: release v${{ steps.bump_version.outputs.new_version }}"
+          git tag "v${{ steps.bump_version.outputs.new_version }}"
+
+      - name: Push changes
+        run: |
+          git push origin main
+          git push origin "v${{ steps.bump_version.outputs.new_version }}"
+
+      - name: Determine npm tag
+        id: npm_tag
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          if [[ "$VERSION" == *"-alpha"* ]]; then
+            echo "tag=alpha" >> $GITHUB_OUTPUT
+          elif [[ "$VERSION" == *"-beta"* ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+          elif [[ "$VERSION" == *"-rc"* ]]; then
+            echo "tag=rc" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish to npm (dry run)
+        if: inputs.dry_run == true
+        run: |
+          echo "DRY RUN: Would publish v${{ steps.bump_version.outputs.new_version }} with tag '${{ steps.npm_tag.outputs.tag }}'"
+          npm publish --dry-run
+
+      - name: Publish to npm
+        if: inputs.dry_run == false
+        run: npm publish --tag ${{ steps.npm_tag.outputs.tag }} --provenance --access public
+
+      - name: Create GitHub Release
+        if: inputs.dry_run == false
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.bump_version.outputs.new_version }}';
+            const tag = 'v' + version;
+            const isPrerelease = version.includes('-');
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: tag,
+              generate_release_notes: true,
+              prerelease: isPrerelease
+            });
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v${{ steps.bump_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **npm tag**: ${{ steps.npm_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry run**: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.dry_run }}" = "false" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Published to npm: https://www.npmjs.com/package/homebridge-snowsense/v/${{ steps.bump_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          fi

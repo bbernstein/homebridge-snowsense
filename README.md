@@ -171,25 +171,36 @@ and several other plugins around github.
 ### Reminders to the developer
 (since I usually only look once a year and forget these things)
 
-How to release a new [beta version](https://github.com/homebridge/homebridge-plugin-template#publishing-beta-versions):
+#### Releasing via GitHub Actions (Recommended)
 
-How to increment beta version:
+Releases are managed via the GitHub Actions "Release" workflow using npm OIDC Trusted Publishing.
 
-```agsl
-npm run prepublishOnly
-npm version prerelease
-npm publish --tag beta
-```
+1. Go to **Actions** > **Release** > **Run workflow**
+2. Select your options:
+   - **Release type**: `patch`, `minor`, `major`, or `prerelease`
+   - **Pre-release tag**: `none`, `alpha`, `beta`, or `rc`
+   - **Dry run**: Check to test without publishing
+3. Click **Run workflow**
 
-How to [release a new version](https://github.com/homebridge/homebridge-plugin-template#versioning-your-plugin).
+**Examples:**
+| Current Version | Release Type | Pre-release Tag | New Version |
+|----------------|--------------|-----------------|-------------|
+| 1.0.0 | patch | none | 1.0.1 |
+| 1.0.0 | minor | beta | 1.1.0-beta.0 |
+| 1.1.0-beta.0 | prerelease | none | 1.1.0-beta.1 |
+| 1.1.0-beta.1 | minor | none | 1.1.0 |
 
-eg (when updating patch version):
+#### One-time Setup: Configure Trusted Publishing
 
-```agsl
-npm run prepublishOnly
-npm version patch
-npm publish
-```
+Before the release workflow can publish to npm, configure Trusted Publishing on npmjs.com:
+
+1. Go to [npmjs.com](https://www.npmjs.com) and sign in
+2. Navigate to your package settings
+3. Find "Trusted Publishers" section
+4. Add GitHub Actions as a trusted publisher:
+   - **Repository**: `bbernstein/homebridge-snowsense`
+   - **Workflow**: `release.yml`
+   - **Environment**: (leave empty)
 
 I've added a github action [ai-code-review-action](https://github.com/marketplace/actions/ai-code-review-action)
 to do code reviews on all pull requests. I'm using a fork of the original that allows setting
