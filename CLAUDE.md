@@ -39,11 +39,30 @@ homebridge-snowsense is a Homebridge plugin that creates an Occupancy Sensor ind
 - `npm run lint` - Run ESLint on all TypeScript files
 - `npm run prepublishOnly` - Run all checks (lint, test:coverage, build) before publishing
 
-### Releases
-- `npm version prerelease` - Build next prerelease version
-- `npm publish --tag beta` - Publish prerelease to npm beta channel
-- `npm version patch|minor|major` - Build next release version
-- `npm publish` - Publish stable release to npm
+### Releases (via GitHub Actions)
+
+Releases are managed via the GitHub Actions "Release" workflow, which uses npm OIDC Trusted Publishing (no npm tokens required).
+
+**To create a release:**
+1. Go to Actions > Release > Run workflow
+2. Select release type: `patch`, `minor`, `major`, or `prerelease`
+3. Select pre-release tag: `none`, `alpha`, `beta`, or `rc`
+4. Optionally enable "Dry run" to test without publishing
+5. Click "Run workflow"
+
+**Examples:**
+- `patch` + `none` = `1.0.0` → `1.0.1` (stable patch release)
+- `minor` + `beta` = `1.0.0` → `1.1.0-beta.0` (beta of next minor)
+- `prerelease` + `none` = `1.1.0-beta.0` → `1.1.0-beta.1` (increment beta)
+- `patch` + `none` = `1.1.0-beta.1` → `1.1.1` (promote to stable patch)
+
+**npm tags:**
+- Stable releases → `latest`
+- Alpha pre-releases → `alpha`
+- Beta pre-releases → `beta`
+- RC pre-releases → `rc`
+
+**Note:** The release workflow commits the version bump directly to `main`. This is the only exception to the "never commit to main" rule, as it's automated and gated by manual workflow dispatch.
 
 ## Testing Guidelines
 
