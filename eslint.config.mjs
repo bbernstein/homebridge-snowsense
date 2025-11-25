@@ -25,7 +25,6 @@ export default tseslint.config(
       'prefer-arrow-callback': ['warn'],
       'max-len': ['warn', 140],
       'no-console': ['warn'],
-      'no-non-null-assertion': ['off'],
       'comma-spacing': ['error'],
       'no-multi-spaces': ['warn', { 'ignoreEOLComments': true }],
       'no-trailing-spaces': ['warn'],
