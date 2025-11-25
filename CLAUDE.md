@@ -53,9 +53,9 @@ homebridge-snowsense is a Homebridge plugin that creates an Occupancy Sensor ind
 - Each class should have a corresponding spec file
 
 ### Coverage Requirements
-- Minimum 90% coverage required (currently at 100%)
+- Enforced thresholds: 95% branches, 100% functions/lines/statements
 - Run `npm run test:coverage` to verify before committing
-- Coverage excludes: `*.d.ts`, `*.spec.ts`
+- Coverage excludes: `*.d.ts`, `*.spec.ts`, `index.ts`
 
 ## Homebridge Plugin Architecture
 
