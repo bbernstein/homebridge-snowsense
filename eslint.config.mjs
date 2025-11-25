@@ -32,6 +32,7 @@ export default tseslint.config(
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+      'lines-between-class-members': ['warn', 'always', { 'exceptAfterSingleLine': true }],
     },
   },
   {

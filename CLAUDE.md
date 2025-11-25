@@ -75,6 +75,6 @@ homebridge-snowsense is a Homebridge plugin that creates an Occupancy Sensor ind
 
 ## Node.js Compatibility
 
-- Supported versions: Node 18, 20, 22, 24
-- Node 22+ requires `--localstorage-file` flag for Jest (handled in npm scripts)
-- CI runs tests on Node 20, 22, and 24
+- Supported versions: Node 18+ (tested on 18, 20, 22, 24; Node 25 works but is not CI-tested as it's a development release)
+- Node 22+ requires `--localstorage-file` flag for Jest (handled conditionally in npm scripts)
+- CI runs tests on Node 18, 20, 22, and 24
