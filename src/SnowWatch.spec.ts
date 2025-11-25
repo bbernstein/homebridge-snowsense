@@ -1,7 +1,7 @@
 import {HISTORY_FILE, SnowWatch, SnowWatchOptions} from './SnowWatch';
 import SnowForecastService, { SnowForecast, SnowReport } from './SnowForecastService';
 import { DeviceConfig } from './SnowSenseConfig';
-import { Logger } from 'homebridge';
+import { Logger, Logging } from 'homebridge';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -116,9 +116,8 @@ describe('SnowWatch', () => {
       warn: consoleWarn,
       error: consoleError,
       debug: consoleDebug,
-      success: jest.fn(),
       log: jest.fn(),
-    };
+    } as unknown as Logging;
 
     getWatcher = async (options: SnowWatchOptions) => {
       const watcher = new SnowWatch(logger, options);

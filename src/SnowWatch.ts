@@ -76,7 +76,7 @@ export class SnowWatch {
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
-        } catch (e: unknown) {
+        } catch {
           // ignore
         }
       }
@@ -123,7 +123,7 @@ export class SnowWatch {
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
-        } catch (e: unknown) {
+        } catch {
           // ignore
         }
       }
